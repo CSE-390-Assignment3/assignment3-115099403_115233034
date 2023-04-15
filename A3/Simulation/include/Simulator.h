@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "../../Algorithm/MyAlgorithm.h"
 #include "../../Common/AbstractAlgorithm.h"
 #include "BatteryMeterImpl.h"
 #include "DirtSensorImpl.h"

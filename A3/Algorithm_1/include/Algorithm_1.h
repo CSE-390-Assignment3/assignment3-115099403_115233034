@@ -1,15 +1,16 @@
 #pragma once
 
-#include "../Common/AbstractAlgorithm.h"
-#include "../Simulation/include/DirtSensorImpl.h"
+#include "../../Common/AbstractAlgorithm.h"
+#include "../../Common/DirtSensor.h"
 #include "HouseManager.h"
 #include "types.h"
 
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <stack>
 
-class MyAlgorithm : public AbstractAlgorithm {
+class Algorithm_1 : public AbstractAlgorithm {
 private:
   int steps_;
   std::size_t max_steps_;
@@ -42,8 +43,8 @@ private:
   // std::vector<std::pair<int, int>> neighbors(std::pair<int, int> point);
 
 public:
-  MyAlgorithm();
-  MyAlgorithm(AbstractAlgorithm &algorithm);
+  Algorithm_1();
+  Algorithm_1(AbstractAlgorithm &algorithm);
 
   void setMaxSteps(std::size_t maxSteps) override;
   void setWallsSensor(const WallsSensor &walls_sensor) override;

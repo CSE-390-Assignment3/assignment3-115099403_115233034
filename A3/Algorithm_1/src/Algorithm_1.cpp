@@ -1,33 +1,37 @@
-#include "../include/MyAlgorithm.h"
+#include "../../AlgorithmCommon/AlgorithmRegistration.h"
+
+#include "../include/Algorithm_1.h"
 
 #include "../include/Utils.h"
 
 #include <queue>
 
-MyAlgorithm::MyAlgorithm()
+REGISTER_ALGORITHM(Algorithm_1);
+
+Algorithm_1::Algorithm_1()
     : steps_(0), house_manager_(), current_position_(DOCK_POS),
       state_(AlgoState::CHARGING) {
   house_manager_.setDirt(current_position_, int(LocType::Dock));
 }
 
-MyAlgorithm::MyAlgorithm(AbstractAlgorithm &algorithm) { *this = algorithm; }
+Algorithm_1::Algorithm_1(AbstractAlgorithm &algorithm) { *this = algorithm; }
 
-void MyAlgorithm::setMaxSteps(std::size_t max_steps) { max_steps_ = max_steps; }
+void Algorithm_1::setMaxSteps(std::size_t max_steps) { max_steps_ = max_steps; }
 
-void MyAlgorithm::setWallsSensor(const WallsSensor &walls_sensor) {
+void Algorithm_1::setWallsSensor(const WallsSensor &walls_sensor) {
   walls_sensor_ = &walls_sensor;
 }
 
-void MyAlgorithm::setDirtSensor(const DirtSensor &dirt_sensor) {
+void Algorithm_1::setDirtSensor(const DirtSensor &dirt_sensor) {
   dirt_sensor_ = &dirt_sensor;
 }
 
-void MyAlgorithm::setBatteryMeter(const BatteryMeter &battery_meter) {
+void Algorithm_1::setBatteryMeter(const BatteryMeter &battery_meter) {
   battery_meter_ = &battery_meter;
   max_battery_ = battery_meter_->getBatteryState();
 }
 
-void MyAlgorithm::updateNeighbors() {
+void Algorithm_1::updateNeighbors() {
   house_manager_.eraseUnexplored(current_position_);
 
   for (auto dir : dirPriority()) {
@@ -36,7 +40,7 @@ void MyAlgorithm::updateNeighbors() {
   }
 }
 
-bool MyAlgorithm::needCharge() {
+bool Algorithm_1::needCharge() {
   if (current_position_ == DOCK_POS)
     return false;
   auto st = house_manager_.getShortestPath(current_position_, DOCK_POS);
@@ -46,7 +50,7 @@ bool MyAlgorithm::needCharge() {
   return false;
 }
 
-Step MyAlgorithm::work() {
+Step Algorithm_1::work() {
   // Assuming current_pos exists in percieved
   // priority to cleaning
   // std::cout << __FUNCTION__ << std::endl;
@@ -92,7 +96,7 @@ Step MyAlgorithm::work() {
  * @todo
  * 1. handle total dirt
  */
-Step MyAlgorithm::nextStep() {
+Step Algorithm_1::nextStep() {
   if (battery_meter_->getBatteryState() == 1 && steps_ == 0) // DEAD case
     return Step::Finish;
   steps_++;

@@ -1,4 +1,4 @@
-#include "WallsSensorImpl.h"
+#include "../include/WallsSensorImpl.h"
 
 WallsSensorImpl::WallsSensorImpl(const House &house, const RobotState &robot)
     : house_(&house), robot_(&robot) {}

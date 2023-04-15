@@ -1,4 +1,4 @@
-#include "DirtSensorImpl.h"
+#include "../include/DirtSensorImpl.h"
 
 DirtSensorImpl::DirtSensorImpl(const House &house, const RobotState &robot)
     : house_(&house), robot_(&robot) {}

@@ -4,6 +4,7 @@
 
 #include <map>
 #include <stack>
+#include <vector>
 
 class HouseManager {
 private:
