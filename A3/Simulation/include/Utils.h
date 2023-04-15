@@ -43,5 +43,5 @@ std::ostream &operator<<(std::ostream &out, const Step &step);
 std::ostream &operator<<(std::ostream &out, const FileReadError &error);
 
 Direction reverse(const Direction &d);
-Step reverse(Step s);
+Step reverse(const Step &s);
 std::string str(const Step &step);

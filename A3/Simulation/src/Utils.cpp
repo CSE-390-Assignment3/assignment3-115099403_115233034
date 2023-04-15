@@ -42,39 +42,18 @@ size_t Utils::readAEqb(string input, string varname) {
   string valstring = input.substr(idx + 1);
   return parseInt(valstring);
 }
+
 std::ostream &operator<<(std::ostream &out, const Position &pos) {
   out << "(" << pos.r << "," << pos.c << ")";
   return out;
 }
-Direction reverse(Direction d) {
-  switch (d) {
-  case Direction::North:
-    return Direction::South;
-  case Direction::South:
-    return Direction::North;
-  case Direction::West:
-    return Direction::East;
-  case Direction::East:
-    return Direction::West;
-  default:
-    return Direction::West;
-  }
+
+Direction reverse(const Direction &direction) {
+  return reverseDirections[static_cast<int>(direction)];
 }
 
-Step reverse(Step s) {
-  switch (s) {
-  case Step::North:
-    return Step::South;
-  case Step::South:
-    return Step::North;
-  case Step::West:
-    return Step::East;
-  case Step::East:
-    return Step::West;
-  default:
-    return Step::Stay;
-  }
-}
+Step reverse(const Step &step) { return reverseSteps[static_cast<int>(step)]; }
+
 std::ostream &operator<<(std::ostream &out, const Step &step) {
   out << str(step);
   return out;
@@ -98,25 +77,7 @@ std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
 }
 
 std::string str(const Step &step) {
-  switch (step) {
-  case Step::North:
-    return "North";
-    break;
-  case Step::South:
-    return "South";
-    break;
-  case Step::East:
-    return "East";
-    break;
-  case Step::West:
-    return "West";
-    break;
-  case Step::Stay:
-    return "stay";
-    break;
-  case Step::Finish:
-    return "Finish";
-    break;
-  }
-  return std::string();
+  static std::string string_step[] = {"North", "South", "East",
+                                      "West",  "stay",  "Finish"};
+  return string_step[static_cast<int>(step)];
 }
