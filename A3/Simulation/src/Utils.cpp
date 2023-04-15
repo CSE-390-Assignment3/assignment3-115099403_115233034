@@ -1,5 +1,5 @@
-#include "Utils.h"
-#include "ErrorCodes.h"
+#include "../include/Utils.h"
+#include "../include/ErrorCodes.h"
 
 using std::string;
 
@@ -118,4 +118,5 @@ std::string str(const Step &step) {
     return "Finish";
     break;
   }
+  return std::string();
 }

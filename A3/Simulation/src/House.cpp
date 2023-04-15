@@ -1,4 +1,4 @@
-#include "House.h"
+#include "../include/House.h"
 
 int House::clean(const Position &position) {
   if (position.r >= data_.size() || position.c >= data_[0].size())

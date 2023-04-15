@@ -1,7 +1,7 @@
-#include "Simulator.h"
+#include "../include/Simulator.h"
 
-#include "ErrorCodes.h"
-#include "Utils.h"
+#include "../include/ErrorCodes.h"
+#include "../include/Utils.h"
 
 Simulator::Simulator()
     : robot_state_(), dirt_sensor_(house_, robot_state_),
@@ -113,6 +113,9 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
     row_number++;
     if (row_number == n_rows_)
       break;
+  }
+  if (!dock_found) {
+    std::cout << "ERROR!! Invalid House file no dock found!!" << std::endl;
   }
   myfile.close();
   house_.init(data);
