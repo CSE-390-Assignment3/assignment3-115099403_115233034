@@ -13,6 +13,7 @@ set(SIM_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/Utils.h
     ${PROJECT_SOURCE_DIR}/include/Simulator.h
     ${PROJECT_SOURCE_DIR}/include/RobotState.h
+    ${PROJECT_SOURCE_DIR}/include/InputParser.h
     )
 
 # add_library(${PROJECT_NAME} SHARED 
@@ -36,6 +37,7 @@ add_executable( ${PROJECT_NAME} main.cpp
     ${PROJECT_SOURCE_DIR}/src/Simulator.cpp
     ${PROJECT_SOURCE_DIR}/src/RobotState.cpp
     ${PROJECT_SOURCE_DIR}/src/Utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/InputParser.cpp
     ${PROJECT_SOURCE_DIR}/AlgorithmRegistrar.cpp
     )
 target_include_directories( ${PROJECT_NAME} 

@@ -25,14 +25,19 @@ set(ALGO_INCLUDES
     ${PROJECT_SOURCE_DIR}/Algorithm/include/HouseManager.h
     )
 
-add_library(Algorithm_1 SHARED 
+add_library(${PROJECT_NAME} SHARED 
     ${PROJECT_SOURCE_DIR}/src/Algorithm_1.cpp
     ${PROJECT_SOURCE_DIR}/src/HouseManager.cpp
     ${PROJECT_SOURCE_DIR}/src/Utils.cpp
     )
 
-target_include_directories(Algorithm_1 PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
     # ${ALGO_COMMON_INCLUDES} 
     ${COMMON_INCLUDES}
     ${ALGO_INCLUDES}
     )
+
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/algo_dir/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/libAlgorithm_1.so ${CMAKE_BINARY_DIR}/algo_dir/)
