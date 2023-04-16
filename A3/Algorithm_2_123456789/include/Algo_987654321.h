@@ -5,18 +5,16 @@
 #ifndef A2_ALGO_987654321_H
 #define A2_ALGO_987654321_H
 
-#include <cstddef>
 #include "../../Common/AbstractAlgorithm.h"
+#include <cstddef>
 
-class Algo_987654321: public AbstractAlgorithm {
+class Algo_987654321 : public AbstractAlgorithm {
 public:
-    void setMaxSteps(std::size_t maxSteps) override {}
-    void setWallsSensor(const WallsSensor&) override {}
-    void setDirtSensor(const DirtSensor&) override {}
-    void setBatteryMeter(const BatteryMeter&) override {}
-    Step nextStep() override {
-        return Step::South;
-    }
+  void setMaxSteps(std::size_t maxSteps) override {}
+  void setWallsSensor(const WallsSensor &) override {}
+  void setDirtSensor(const DirtSensor &) override {}
+  void setBatteryMeter(const BatteryMeter &) override {}
+  Step nextStep() override { return Step::South; }
 };
 
-#endif //A2_ALGO_987654321_H
+#endif // A2_ALGO_987654321_H

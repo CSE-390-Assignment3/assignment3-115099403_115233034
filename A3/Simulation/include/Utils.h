@@ -8,16 +8,6 @@
 #include <iostream>
 #include <string>
 
-/**
- * All values in lines 2-5 may or may have spaces around the = sign
- * If the file is invalid you can reject it and print the reason to screen
- */
-class Utils {
-public:
-  static double parseInt(std::string input);
-  static size_t readAEqb(std::string input, std::string varname);
-};
-
 struct Position {
   int r, c;
   Position next(const Step &d) {
@@ -43,5 +33,6 @@ std::ostream &operator<<(std::ostream &out, const Step &step);
 std::ostream &operator<<(std::ostream &out, const FileReadError &error);
 
 Direction reverse(const Direction &d);
-Step reverse(Step s);
+Step reverse(const Step &s);
+
 std::string str(const Step &step);

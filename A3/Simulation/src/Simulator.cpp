@@ -1,6 +1,7 @@
 #include "../include/Simulator.h"
 
 #include "../include/ErrorCodes.h"
+#include "../include/InputParser.h"
 #include "../include/Utils.h"
 
 Simulator::Simulator()
@@ -34,7 +35,7 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
   std::getline(myfile, house_name);
 
   std::getline(myfile, max_steps_s);
-  max_steps_ = Utils::readAEqb(max_steps_s, "MaxSteps");
+  max_steps_ = readAEqb(max_steps_s, "MaxSteps");
   if (max_steps_ < 0) {
     print_read_error(max_steps_);
     return max_steps_;
@@ -43,7 +44,7 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
     return -1;
   }
   std::getline(myfile, max_battery_s);
-  int max_robot_battery_ = Utils::readAEqb(max_battery_s, "MaxBattery");
+  int max_robot_battery_ = readAEqb(max_battery_s, "MaxBattery");
   if (max_robot_battery_ < 0) {
     print_read_error(max_robot_battery_);
     return max_robot_battery_;
@@ -52,7 +53,7 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
     return -1;
   }
   std::getline(myfile, num_rows_s);
-  int n_rows_ = Utils::readAEqb(num_rows_s, "Rows");
+  int n_rows_ = readAEqb(num_rows_s, "Rows");
   if (n_rows_ < 0) {
     print_read_error(n_rows_);
     return n_rows_;
@@ -62,25 +63,25 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
     return -1;
   }
   std::getline(myfile, num_cols_s);
-  int n_cols_ = Utils::readAEqb(num_cols_s, "Cols");
+  int n_cols_ = readAEqb(num_cols_s, "Cols");
   if (n_cols_ < 0) {
     print_read_error(n_cols_);
     return n_cols_;
   }
 
-  std::cout << max_steps_s << std::endl
-            << max_battery_s << std::endl
-            << num_rows_s << std::endl
-            << num_cols_s << std::endl;
+  // std::cout << max_steps_s << std::endl
+  //           << max_battery_s << std::endl
+  //           << num_rows_s << std::endl
+  //           << num_cols_s << std::endl;
 
   if (myfile.eof()) {
     return -1;
   }
 
-  std::cout << max_steps_ << std::endl
-            << max_robot_battery_ << std::endl
-            << n_rows_ << std::endl
-            << n_cols_ << std::endl;
+  // std::cout << max_steps_ << std::endl
+  //           << max_robot_battery_ << std::endl
+  //           << n_rows_ << std::endl
+  //           << n_cols_ << std::endl;
 
   std::vector<std::vector<int>> data(n_rows_, std::vector<int>(n_cols_, 0));
 
@@ -121,7 +122,7 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
   house_.init(data);
   robot_state_.init(max_robot_battery_, house_.getDockPos());
   std::cout << "Robot: max_robot_battery:" << max_robot_battery_ << std::endl;
-  std::cout << house_;
+  // std::cout << house_;
 
   return 1;
 }
