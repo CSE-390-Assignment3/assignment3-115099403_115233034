@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 class Simulator {
 private:
@@ -32,7 +33,8 @@ private:
 
 public:
   Simulator();
-  int readHouseFile(const std::string &house_file_path);
+  int readHouseFile(const std::string &house_file_path,
+                    std::stringstream &error_buffer);
   void setAlgorithm(AbstractAlgorithm &algorithm);
   void run();
   void dump(std::string outFileName);

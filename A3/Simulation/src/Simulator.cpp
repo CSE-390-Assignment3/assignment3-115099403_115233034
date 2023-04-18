@@ -18,7 +18,8 @@ void Simulator::setAlgorithm(AbstractAlgorithm &algorithm) {
   algo->setBatteryMeter(battery_meter_);
 }
 
-int Simulator::readHouseFile(const std::string &houseFilePath) {
+int Simulator::readHouseFile(const std::string &houseFilePath,
+                             std::stringstream &error_buffer) {
   // populate house_ structure here
 
   std::string house_name, max_steps_s, max_battery_s, num_rows_s, num_cols_s;
@@ -28,44 +29,47 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
   if (!myfile.is_open()) {
     return -1;
   }
-  auto print_read_error = [=](auto e) {
-    std::cout << "ERROR!! While reading input file : " << FileReadError(e)
-              << std::endl;
+  auto print_read_error = [=](auto st, auto e, std::stringstream &buff) {
+    buff << "ERROR!! While reading input file : " << FileReadError(e) << st
+         << std::endl;
   };
   std::getline(myfile, house_name);
 
   std::getline(myfile, max_steps_s);
   max_steps_ = readAEqb(max_steps_s, "MaxSteps");
   if (max_steps_ < 0) {
-    print_read_error(max_steps_);
+    print_read_error("Expected MaxSteps", max_steps_, error_buffer);
     return max_steps_;
   }
   if (myfile.eof()) {
+    error_buffer << "Reached end of file. Unexpected behaviour " << std::endl;
     return -1;
   }
   std::getline(myfile, max_battery_s);
   int max_robot_battery_ = readAEqb(max_battery_s, "MaxBattery");
   if (max_robot_battery_ < 0) {
-    print_read_error(max_robot_battery_);
+    print_read_error("Expected MaxBattery", max_robot_battery_, error_buffer);
     return max_robot_battery_;
   }
   if (myfile.eof()) {
+    error_buffer << "Reached end of file. Unexpected behaviour " << std::endl;
     return -1;
   }
   std::getline(myfile, num_rows_s);
   int n_rows_ = readAEqb(num_rows_s, "Rows");
   if (n_rows_ < 0) {
-    print_read_error(n_rows_);
+    print_read_error("Expected Rows", n_rows_, error_buffer);
     return n_rows_;
   }
 
   if (myfile.eof()) {
+    error_buffer << "Reached end of file. Unexpected behaviour " << std::endl;
     return -1;
   }
   std::getline(myfile, num_cols_s);
   int n_cols_ = readAEqb(num_cols_s, "Cols");
   if (n_cols_ < 0) {
-    print_read_error(n_cols_);
+    print_read_error("Expected Cols", n_cols_, error_buffer);
     return n_cols_;
   }
 
@@ -75,6 +79,7 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
   //           << num_cols_s << std::endl;
 
   if (myfile.eof()) {
+    error_buffer << "Reached end of file. Unexpected behaviour " << std::endl;
     return -1;
   }
 
@@ -102,11 +107,11 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
         dock_found = 1;
         data[row_number][col_number] = 100; // replace with LocType
       } else if (line[col_number] == 'D') {
-        std::cout << "ERROR!! Invalid House file More than one dock found!!"
-                  << std::endl;
+        error_buffer << "ERROR!! Invalid House file More than one dock found!!"
+                     << std::endl;
         return -1;
       } else {
-        std::cout << "ERROR!! Invalid House data" << std::endl;
+        error_buffer << "ERROR!! Invalid House data" << std::endl;
         return -1;
       }
     }
@@ -116,13 +121,14 @@ int Simulator::readHouseFile(const std::string &houseFilePath) {
       break;
   }
   if (!dock_found) {
-    std::cout << "ERROR!! Invalid House file no dock found!!" << std::endl;
+    error_buffer << "ERROR!! Invalid House file no dock found!!" << std::endl;
   }
   myfile.close();
   house_.init(data);
   robot_state_.init(max_robot_battery_, house_.getDockPos());
-  std::cout << "Robot: max_robot_battery:" << max_robot_battery_ << std::endl;
-  // std::cout << house_;
+  error_buffer << "Info:: Robot: max_robot_battery:" << max_robot_battery_
+               << std::endl;
+  error_buffer << "House INFO" << std::endl << house_;
 
   return 1;
 }
@@ -178,14 +184,25 @@ void Simulator::run() {
   // }
   std::cout << "After simulation " << house_;
 }
-void Simulator::dump(std::string outputFileName) {
-  std::ofstream myfile;
-  myfile.open(outputFileName);
-  myfile << "NumSteps = " << steps_ << std::endl;
-  myfile << "DirtLeft = " << house_.totDirt() << std::endl;
-  myfile << "Status = " << final_state_ << std::endl;
+void Simulator::dump(std::string output_file_name) {
+  std::ofstream outfile(output_file_name);
+  if (!outfile) {
+    std::cout << "Error opening file " << output_file_name << std::endl;
+    std::cout << "Simulator returning without writing to file " << std::endl;
+    return;
+  }
+  outfile << "NumSteps = " << steps_ << std::endl;
+  outfile << "DirtLeft = " << house_.totDirt() << std::endl;
+  outfile << "Status = " << final_state_ << std::endl;
+  outfile << "InDock = "
+          << ((robot_state_.getPosition() == house_.getDockPos()) ? "TRUE"
+                                                                  : "FALSE")
+          << std::endl;
+  // TODO: replace 0 with score function
+  outfile << "Score = " << 0 << std::endl;
+
   for (auto step : step_list_)
-    myfile << step;
-  myfile << std::endl;
-  myfile.close();
+    outfile << step;
+  outfile << std::endl;
+  outfile.close();
 }
