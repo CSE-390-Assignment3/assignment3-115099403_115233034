@@ -32,14 +32,16 @@ int main(int argc, char **argv) {
 
   if (algo_files.empty()) {
     std::cerr << "ArgumentsError No valid algo files found in path and current "
-                 "directory"
+                 "directory, Stopping Simulator."
               << std::endl;
+    return -1;
   }
 
   if (house_files.empty()) {
     std::cerr << "ArgumentsError No valid house files found in path and "
-                 "current directory"
+                 "current directory, Stopping Simulator."
               << std::endl;
+    return -1;
   }
 
   if (false) {

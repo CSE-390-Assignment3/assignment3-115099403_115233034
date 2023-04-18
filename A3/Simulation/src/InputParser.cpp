@@ -70,9 +70,11 @@ std::vector<std::string> parseDirectory(std::string dirpath,
     if (!files.empty())
       return files;
   }
-  std::cout << "no matching files, exploring current directory" << std::endl;
-  if (trynext)
+  if (trynext) {
+    std::cout << "no matching files in " << dirpath << " with extension "
+              << extension << " exploring current directory" << std::endl;
     files = parseDirectory(std::filesystem::current_path(), extension, false);
+  }
   return files;
 }
 
