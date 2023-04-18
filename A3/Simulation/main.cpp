@@ -5,7 +5,6 @@
 #include <dlfcn.h>
 
 #include "include/ErrorCodes.h"
-#include "include/InputHandler.h"
 #include "include/Simulator.h"
 #include "include/config.h"
 
