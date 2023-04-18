@@ -142,7 +142,9 @@ void Simulator::run() {
     //           << " Battery: " << battery_meter_.getBatteryState()
     //           << " Dirt: " << dirt_sensor_.dirtLevel() << std::endl;
     error = false;
+    // std::cout << __PRETTY_FUNCTION__ << " before nextStep" << std::endl;
     Step currentStep = algo->nextStep();
+    // std::cout << "Simulator::step Next step " << std::endl;
     /** DEAD case handle */
     step_list_.push_back(str(currentStep)[0]);
     if (currentStep == Step::Finish) {
@@ -182,7 +184,7 @@ void Simulator::run() {
   // } else {
   //   final_state_ = "WORKING";
   // }
-  std::cout << "After simulation " << house_;
+  // std::cout << "After simulation " << house_;
 }
 void Simulator::dump(std::string output_file_name) {
   std::ofstream outfile(output_file_name);
