@@ -6,14 +6,15 @@ set(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_EXE_LINKER_FLAGS  "-rdynamic -ldl")
 
 set(SIM_INCLUDES
+    ${PROJECT_SOURCE_DIR}/include/InputParser.h
+    ${PROJECT_SOURCE_DIR}/include/Utils.h
+    ${PROJECT_SOURCE_DIR}/include/RobotState.h
     ${PROJECT_SOURCE_DIR}/include/BatteryMeterImpl.h
     ${PROJECT_SOURCE_DIR}/include/WallsSensorImpl.h
     ${PROJECT_SOURCE_DIR}/include/DirtSensorImpl.h
     ${PROJECT_SOURCE_DIR}/include/House.h
-    ${PROJECT_SOURCE_DIR}/include/Utils.h
     ${PROJECT_SOURCE_DIR}/include/Simulator.h
-    ${PROJECT_SOURCE_DIR}/include/RobotState.h
-    ${PROJECT_SOURCE_DIR}/include/InputParser.h
+    ${PROJECT_SOURCE_DIR}/include/Config.h
     )
 
 # add_library(${PROJECT_NAME} SHARED 
