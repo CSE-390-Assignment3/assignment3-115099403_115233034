@@ -29,6 +29,8 @@ private:
   WallsSensorImpl wall_sensor_;
   BatteryMeterImpl battery_meter_;
 
+  long score_ = -1;
+
   int initSensors();
 
 public:
@@ -37,4 +39,8 @@ public:
   void setAlgorithm(AbstractAlgorithm &algorithm);
   void run();
   void dump(std::string outFileName);
+  long getScore();
+  inline bool isRobotInDock() const {
+    return robot_state_.getPosition() == house_.getDockPos();
+  }
 };
