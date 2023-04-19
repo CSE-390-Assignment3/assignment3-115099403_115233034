@@ -4,90 +4,159 @@
 #include "../Common/AlgorithmRegistrar.h"
 #include <dlfcn.h>
 
-#include "include/ErrorCodes.h"
+#include "include/Config.h"
+#include "include/InputParser.h"
 #include "include/Simulator.h"
-#include "include/config.h"
-
-#include <filesystem>
-#include <string>
 
 using AlgorithmPtr = std::unique_ptr<AlgorithmRegistrar>;
 
-ArgumentsError processArguments(int argc, char **argv, std::string &house,
-                                std::string &algo);
+struct AlgoParams {
+  std::string file_name;
+  bool dlopen_success = false;
+  bool is_algo_valid = false;
+  void *handle = nullptr;
+  int factory_idx = -1;
+};
 
-std::vector<std::string> parseDirectory(std::string dirpath,
-                                        std::string extension,
-                                        bool trynext = true) {
-  std::vector<std::string> files;
-  if (!dirpath.empty()) {
-    std::filesystem::path fpath{dirpath};
-    if (!std::filesystem::is_directory(fpath)) {
-      std::cout << fpath << " is not a directory" << std::endl;
-      return {};
-    }
-    for (auto const &dir_entry : std::filesystem::directory_iterator{fpath}) {
-      if (!dir_entry.is_directory() && dir_entry.path().has_extension() &&
-          dir_entry.path().extension() == extension) {
-        files.push_back(dir_entry.path());
-      }
-    }
-    if (!files.empty())
-      return files;
-  }
-  std::cout << "no matching files, exploring current directory" << std::endl;
-  files = parseDirectory(std::filesystem::current_path(), extension, false);
-  return files;
-}
+struct SimParams {
+  std::string file_name;
+  Simulator sim;
+  bool is_valid = false;
+};
 
-// getting command line arguments for the house file
 int main(int argc, char **argv) {
-  //  TODO: Handle empty command line args etc.
   std::string house_path = "", algo_path = "";
-  // std::vector<std::string> houses, algos;
 
   processArguments(argc, argv, house_path, algo_path) != ArgumentsError::None;
   std::cout << "ArgumentsParsing Success!!" << std::endl;
 
   std::cout << "House path: " << house_path << ", Algo path: " << algo_path
             << std::endl;
-  std::cout << "current path: " << std::filesystem::current_path() << std::endl;
 
   auto algo_files = parseDirectory(algo_path, ALGO_EXTENSION_);
   auto house_files = parseDirectory(house_path, HOUSE_EXTENSION_);
 
-  std::cout << "algo_files: \n";
-  for (auto v : algo_files)
-    std::cout << v << std::endl;
-  std::cout << "house_files: \n";
-  for (auto v : house_files)
-    std::cout << v << std::endl;
+  if (false) {
+    std::cout << "DEBUG:: algo_files: \n";
+    for (auto v : algo_files)
+      std::cout << v << std::endl;
+    std::cout << "DEBUG:: house_files: \n";
+    for (auto v : house_files)
+      std::cout << v << std::endl;
+  }
 
-  std::vector<Simulator> simulators(house_files.size());
-  std::vector<bool> is_simulator_valid(house_files.size());
+  /* Init Simulator struct */
+  std::vector<SimParams> simulators(house_files.size());
+  /* Init Algo struct*/
+  std::vector<AlgoParams> algorithms(algo_files.size());
+
+  bool valid_simulator_found = false, valid_algo_found = true;
 
   for (int index = 0; index < house_files.size(); index++) {
-    auto err = simulators[index].readHouseFile(house_files[index]);
+    simulators[index].file_name = house_files[index];
+
+    auto err = simulators[index].sim.readHouseFile(house_files[index]);
     if ((int)err < 0) {
       std::cerr << err << " at House File:" << house_files[index]
                 << ". Skipping house file" << std::endl;
-    }
-    is_simulator_valid[index] = true;
-  }
 
-  std::vector<void *> algo_handles(algo_files.size());
-  std::vector<bool> is_algo_handles_valid(algo_files.size());
-
-  for (int index = 0; index < algo_files.size(); index++) {
-    algo_handles[index] = dlopen(algo_files[index].c_str(), RTLD_LAZY);
-    if (!algo_handles[index]) {
-      std::cerr << "Error loading algorithm library: " << algo_files[index]
-                << " " << dlerror() << std::endl;
+      std::ofstream out_error;
+      out_error.open(getStem(simulators[index].file_name) +
+                     std::string(ERROR_EXTENSION_));
+      if (!out_error) {
+        std::cout << "Error opening error file "
+                  << getStem(simulators[index].file_name) +
+                         std::string(ERROR_EXTENSION_)
+                  << std::endl;
+        std::cout << "Skipping writing to error file" << std::endl;
+        continue;
+      }
+      out_error << err << std::endl;
+      out_error << "File read error " << simulators[index].file_name
+                << ". Skipping house file" << std::endl;
+      out_error.close();
       continue;
     }
-    is_algo_handles_valid[index] = true;
-    std::cout << "Algorithm " << algo_files[index] << " loaded successfully "
+
+    simulators[index].is_valid = true;
+    valid_simulator_found = true;
+    std::cout << "Simulator " << simulators[index].file_name
+              << " loaded successfully " << std::endl;
+  }
+
+  for (int index = 0, valid_count = 0; index < algo_files.size(); index++) {
+    auto registrar_count = AlgorithmRegistrar::getAlgorithmRegistrar().count();
+    algorithms[index].file_name = algo_files[index];
+    algorithms[index].handle =
+        dlopen(algorithms[index].file_name.c_str(), RTLD_LAZY);
+    if (!algorithms[index].handle) { // dlopen failed
+      std::cout << "error algorithm dlopen " << algorithms[index].file_name
+                << std::endl;
+      std::ofstream out_error;
+      out_error.open(getStem(algorithms[index].file_name) +
+                     std::string(ERROR_EXTENSION_));
+      out_error << "Error loading algorithm library: "
+                << algorithms[index].file_name << " " << dlerror() << std::endl;
+      out_error.close();
+      continue;
+    }
+    algorithms[index].dlopen_success = true; // success
+
+    if (AlgorithmRegistrar::getAlgorithmRegistrar().count() ==
+        registrar_count) { // algorithm has not been registered
+      std::ofstream out_error;
+      out_error.open(getStem(algorithms[index].file_name) +
+                     std::string(ERROR_EXTENSION_));
+      out_error << "Algorithm registration failed: "
+                << algorithms[index].file_name << std::endl;
+      out_error.close();
+    }
+    auto algo =
+        AlgorithmRegistrar::getAlgorithmRegistrar().begin() + valid_count;
+    std::ofstream out_error;
+    out_error.open(getStem(algorithms[index].file_name) +
+                   std::string(ERROR_EXTENSION_));
+    if (!out_error) {
+      std::cout << "Error opening error file "
+                << getStem(algorithms[index].file_name) +
+                       std::string(ERROR_EXTENSION_)
+                << std::endl;
+      std::cout << "Skipping writing to error file" << std::endl;
+    }
+    try {
+      std::cout << "creating algorithm " << index << " "
+                << algorithms[index].file_name << std::endl;
+      auto ptr = algo->create();
+      if (!ptr) {
+        out_error << "NULL algorithm created, skipping algorith \n";
+        continue;
+      }
+      algorithms[index].factory_idx = valid_count++;
+      algorithms[index].is_algo_valid = true;
+      valid_algo_found = true;
+    } catch (...) {
+      if (out_error)
+        out_error << "Algorithm create failed : " << algorithms[index].file_name
+                  << std::endl;
+    }
+    if (out_error)
+      out_error.close();
+    std::cout << "Algorithm " << algorithms[index].file_name
+              << " loaded successfully " << std::endl;
+  }
+
+  if (!valid_algo_found) {
+    std::cerr << "ArgumentsError No valid algo files found in path and current "
+                 "directory, Stopping Simulator."
               << std::endl;
+    return -1;
+  }
+
+  if (!valid_simulator_found) {
+    std::cerr << "ArgumentsError No valid house files found in path and "
+                 "current directory, Stopping Simulator."
+              << std::endl;
+    return -1;
   }
 
   std::cout << "AlgorithmRegistrar count "
@@ -103,46 +172,38 @@ int main(int argc, char **argv) {
   //             << std::endl;
   // }
 
+  auto get_fname = [=](auto hname, auto aname) {
+    return getStem(hname) + "-" + getStem(aname) + ".txt";
+  };
+
+  for (int aindex = 0; aindex < algorithms.size(); aindex++) {
+    if (algorithms[aindex].is_algo_valid) {
+      for (int hindex = 0; hindex < simulators.size(); hindex++) {
+        if (simulators[hindex].is_valid) {
+          Simulator sim;
+          sim.readHouseFile(simulators[hindex].file_name);
+          auto algo = AlgorithmRegistrar::getAlgorithmRegistrar().begin() +
+                      algorithms[aindex].factory_idx;
+          auto algorithm = algo->create();
+          sim.setAlgorithm(*algorithm);
+          std::cout << get_fname(simulators[hindex].file_name,
+                                 algorithms[aindex].file_name)
+                    << std::endl;
+          sim.run();
+          sim.dump(get_fname(simulators[hindex].file_name,
+                             algorithms[aindex].file_name));
+        }
+      }
+    }
+  }
+
+  algorithms.clear();
   AlgorithmRegistrar::getAlgorithmRegistrar().clear();
-  for (int index = 0; index < algo_files.size(); index++) {
-    if (is_algo_handles_valid[index])
-      dlclose(algo_handles[index]);
-  }
-}
 
-ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
-                                std::string &out_algo) {
-  if (argc < 3) {
-    std::cerr << "ArgumentsParsing Error Not enough number of arguments "
-              << std::endl;
-    return ArgumentsError::Incomplete;
-  }
-
-  bool house_path_found = false, algo_path_found = false;
-
-  std::string args_list[] = {"-house_path=", "-algo_path="};
-
-  for (int i = 1; i < argc; i++) {
-    std::string arg(argv[i]);
-    if (arg.substr(0, 12) == args_list[0]) {
-      // house path
-      house_path_found = true;
-      out_house = arg.substr(12);
-    }
-    if (arg.substr(0, 11) == args_list[1]) {
-      // algo path
-      algo_path_found = true;
-      out_algo = arg.substr(11);
+  for (int aindex = 0; aindex < algo_files.size(); aindex++) {
+    if (algorithms[aindex].dlopen_success) {
+      dlclose(algorithms[aindex].handle);
     }
   }
-
-  if (!house_path_found) {
-    std::cerr << "ArgumentsParsing Error House path not found " << std::endl;
-    return ArgumentsError::MissingHouse;
-  }
-  if (!algo_path_found) {
-    std::cerr << "ArgumentsParsing Error Algo path not found " << std::endl;
-    return ArgumentsError::MissingAlgo;
-  }
-  return ArgumentsError::None;
+  return 0;
 }

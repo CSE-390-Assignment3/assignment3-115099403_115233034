@@ -1,9 +1,8 @@
 #pragma once
 
 #include "../../Common/common_types.h"
+#include "Config.h"
 #include "ErrorCodes.h"
-
-#define MAX_STEPS_CHARGE 20
 
 #include <iostream>
 #include <string>

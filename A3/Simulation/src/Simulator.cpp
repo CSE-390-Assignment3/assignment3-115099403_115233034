@@ -1,5 +1,4 @@
 #include "../include/Simulator.h"
-
 #include "../include/ErrorCodes.h"
 #include "../include/InputParser.h"
 #include "../include/Utils.h"
@@ -31,7 +30,9 @@ void Simulator::run() {
     //           << " Battery: " << battery_meter_.getBatteryState()
     //           << " Dirt: " << dirt_sensor_.dirtLevel() << std::endl;
     error = false;
+    // std::cout << __PRETTY_FUNCTION__ << " before nextStep" << std::endl;
     Step currentStep = algo->nextStep();
+    // std::cout << "Simulator::step Next step " << std::endl;
     /** DEAD case handle */
     step_list_.push_back(str(currentStep)[0]);
     if (currentStep == Step::Finish) {
@@ -71,16 +72,27 @@ void Simulator::run() {
   // } else {
   //   final_state_ = "WORKING";
   // }
-  std::cout << "After simulation " << house_;
+  // std::cout << "After simulation " << house_;
 }
-void Simulator::dump(std::string outputFileName) {
-  std::ofstream myfile;
-  myfile.open(outputFileName);
-  myfile << "NumSteps = " << steps_ << std::endl;
-  myfile << "DirtLeft = " << house_.totDirt() << std::endl;
-  myfile << "Status = " << final_state_ << std::endl;
+void Simulator::dump(std::string output_file_name) {
+  std::ofstream outfile(output_file_name);
+  if (!outfile) {
+    std::cout << "Error opening file " << output_file_name << std::endl;
+    std::cout << "Simulator returning without writing to file " << std::endl;
+    return;
+  }
+  outfile << "NumSteps = " << steps_ << std::endl;
+  outfile << "DirtLeft = " << house_.totDirt() << std::endl;
+  outfile << "Status = " << final_state_ << std::endl;
+  outfile << "InDock = "
+          << ((robot_state_.getPosition() == house_.getDockPos()) ? "TRUE"
+                                                                  : "FALSE")
+          << std::endl;
+  // TODO: replace 0 with score function
+  outfile << "Score = " << 0 << std::endl;
+
   for (auto step : step_list_)
-    myfile << step;
-  myfile << std::endl;
-  myfile.close();
+    outfile << step;
+  outfile << std::endl;
+  outfile.close();
 }
