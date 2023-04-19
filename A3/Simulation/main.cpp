@@ -25,19 +25,19 @@ struct SimParams {
 };
 
 int main(int argc, char **argv) {
-  std::string house_path = "", algo_path = "";
-  bool summary_only = false;
+  CmdArgs cmd_args;
 
-  processArguments(argc, argv, house_path, algo_path, summary_only) !=
-      ArgumentsError::None;
+  // error handling not needed as all parameters have default value
+  processArguments(argc, argv, cmd_args); // != ArgumentsError::None;
   std::cout << "ArgumentsParsing Success!!" << std::endl;
 
-  std::cout << "House path: " << house_path << ", Algo path: " << algo_path
-            << (summary_only ? " and summary_only flag enabled" : "")
-            << std::endl;
+  std::cout << "House path: " << cmd_args.houses_path
+            << ", Algo path: " << cmd_args.algos_path
+            << (cmd_args.summary_only ? " and summary_only flag enabled" : "")
+            << "\n number of threads " << cmd_args.num_threads << std::endl;
 
-  auto algo_files = parseDirectory(algo_path, ALGO_EXTENSION_);
-  auto house_files = parseDirectory(house_path, HOUSE_EXTENSION_);
+  auto algo_files = parseDirectory(cmd_args.algos_path, ALGO_EXTENSION_);
+  auto house_files = parseDirectory(cmd_args.houses_path, HOUSE_EXTENSION_);
 
   if (false) {
     std::cout << "DEBUG:: algo_files: \n";
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
                                  algorithms[aindex].file_name)
                     << std::endl;
           sim.run();
-          if (!summary_only)
+          if (!cmd_args.summary_only)
             sim.dump(get_fname(simulators[hindex].file_name,
                                algorithms[aindex].file_name));
         }

@@ -182,8 +182,7 @@ std::vector<std::string> parseDirectory(std::string dirpath,
   return files;
 }
 
-ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
-                                std::string &out_algo, bool &summary_only) {
+ArgumentsError processArguments(int argc, char **argv, CmdArgs &cmd_args) {
   if (argc < 1) {
     std::cerr << "ArgumentsParsing Error Not enough number of arguments "
               << std::endl;
@@ -192,22 +191,30 @@ ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
 
   bool house_path_found = false, algo_path_found = false;
 
-  std::string args_list[] = {"-house_path=", "-algo_path=", "-summary_only"};
+  std::string args_list[] = {"-house_path=", "-algo_path=", "-summary_only",
+                             "-num_threads="};
+  for (auto arg : args_list) {
+  }
 
   for (int i = 1; i < argc; i++) {
     std::string arg(argv[i]);
-    if (arg.substr(0, 12) == args_list[0]) {
+    if (arg.substr(0, args_list[0].size()) == args_list[0]) {
       // house path
       house_path_found = true;
-      out_house = arg.substr(12);
+      cmd_args.houses_path = arg.substr(12);
     }
-    if (arg.substr(0, 11) == args_list[1]) {
+    if (arg.substr(0, args_list[1].size()) == args_list[1]) {
       // algo path
       algo_path_found = true;
-      out_algo = arg.substr(11);
+      cmd_args.algos_path = arg.substr(11);
     }
-    if (arg.substr(0, 13) == args_list[2]) {
-      summary_only = true;
+    if (arg.substr(0, args_list[2].size()) == args_list[2]) {
+      cmd_args.summary_only = true;
+    }
+    if (arg.substr(0, args_list[3].size()) == args_list[3]) {
+      int value = readAEqb(arg.substr(1), "num_threads");
+      if (value > 0)
+        cmd_args.num_threads = value;
     }
   }
 
