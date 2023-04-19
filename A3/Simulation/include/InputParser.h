@@ -10,7 +10,7 @@
  */
 double parseInt(std::string input);
 
-double readAEqb(std::string input, std::string varname);
+long readAEqb(std::string input, std::string varname);
 
 FileReadError populateInput(House &house, RobotState &robot_state,
                             size_t &max_steps,

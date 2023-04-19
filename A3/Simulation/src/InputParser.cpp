@@ -1,5 +1,4 @@
 #include "../include/InputParser.h"
-#include "../../Common/AbstractAlgorithm.h"
 #include "../include/ErrorCodes.h"
 #include "../include/Utils.h"
 #include <fstream>
@@ -29,15 +28,15 @@ double parseInt(std::string input) {
   }
 }
 
-double readAEqb(std::string input, std::string varname) {
+long readAEqb(std::string input, std::string varname) {
   int idx = input.find('=');
   if (idx == std::string::npos)
-    return (double)FileReadError::Invalid;
+    return (long)FileReadError::Invalid;
   auto varstring = input.substr(0, idx);
 
   lrtrim(varstring);
   if (varstring != varname)
-    return (double)FileReadError::Invalid;
+    return (long)FileReadError::Invalid;
 
   std::string valstring = input.substr(idx + 1);
   return parseInt(valstring);

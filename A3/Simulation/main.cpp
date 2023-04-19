@@ -69,7 +69,8 @@ int main(int argc, char **argv) {
   for (int index = 0; index < house_files.size(); index++) {
     auto err = simulators[index].readHouseFile(house_files[index]);
     if ((int)err < 0) {
-      std::cerr << err;
+      std::cerr << err << " at House File:" << house_files[index]
+                << ". Skipping house file" << std::endl;
     }
     is_simulator_valid[index] = true;
   }
