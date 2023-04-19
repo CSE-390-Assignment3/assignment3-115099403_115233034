@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
   std::vector<bool> is_simulator_valid(house_files.size());
 
   for (int index = 0; index < house_files.size(); index++) {
-    if (simulators[index].readHouseFile(house_files[index]) < 0) {
-      std::cout << "File read error " << house_files[index]
-                << ". Skipping house file" << std::endl;
+    auto err = simulators[index].readHouseFile(house_files[index]);
+    if ((int)err < 0) {
+      std::cerr << err;
     }
     is_simulator_valid[index] = true;
   }

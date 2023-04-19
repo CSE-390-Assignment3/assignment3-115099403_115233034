@@ -32,7 +32,7 @@ private:
 
 public:
   Simulator();
-  int readHouseFile(const std::string &house_file_path);
+  FileReadError readHouseFile(const std::string &house_file_path);
   void setAlgorithm(AbstractAlgorithm &algorithm);
   void run();
   void dump(std::string outFileName);

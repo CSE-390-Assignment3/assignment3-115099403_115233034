@@ -1,7 +1,6 @@
 #include "../include/Simulator.h"
 
 #include "../include/ErrorCodes.h"
-#include "../include/InputHandler.h"
 #include "../include/InputParser.h"
 #include "../include/Utils.h"
 
@@ -19,9 +18,8 @@ void Simulator::setAlgorithm(AbstractAlgorithm &algorithm) {
   algo->setBatteryMeter(battery_meter_);
 }
 
-int Simulator::readHouseFile(const std::string &houseFilePath) {
-  return InputHandler::populateInput(house_, robot_state_, max_steps_,
-                                     houseFilePath);
+FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
+  return populateInput(house_, robot_state_, max_steps_, houseFilePath);
 }
 
 void Simulator::run() {

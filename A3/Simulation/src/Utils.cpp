@@ -25,6 +25,11 @@ std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
                                      static_cast<int>(FileReadError::None)];
 }
 
+std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
+  return out << string_FileReadError[static_cast<int>(error) -
+                                     static_cast<int>(FileReadError::Invalid)];
+}
+
 std::string str(const Step &step) {
   static std::string string_step[] = {"North", "South", "East",
                                       "West",  "stay",  "Finish"};

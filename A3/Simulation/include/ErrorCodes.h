@@ -1,14 +1,5 @@
 #pragma once
 
-enum class FileReadError {
-  // TODO: Add more codes as we go
-  None = -100,  // Generic error
-  Invalid,      // Generic error
-  InvalidName,  // A=b incorrect variable name (A)
-  InvalidValue, // A=b incorrect value
-  InvalidFormat // File format incorrect/missing fields/lines
-};
-
 enum class ArgumentsError {
   // Note: add as per need
   None = -100,
@@ -16,3 +7,29 @@ enum class ArgumentsError {
   MissingHouse,
   MissingAlgo,
 };
+
+enum class FileReadError {
+  None = 0,
+  Invalid = -101,
+  InvalidValue,
+  InvalidInputFile,
+  InvalidFieldName,
+  InvalidFieldCols,
+  InvalidFieldRows,
+  InvalidFieldMaxSteps,
+  InvalidFieldMaxBattery,
+  InvalidFormatMultipleDocks,
+  InvalidFormatMissingDock,
+};
+
+std::string string_FileReadError[] = {
+    "FileReadError::Invalid",
+    "FileReadError::InvalidValue",
+    "FileReadError::InvalidInputFile",
+    "FileReadError::InvalidFieldName",
+    "FileReadError::InvalidFieldCols",
+    "FileReadError::InvalidFieldRows",
+    "FileReadError::InvalidFieldMaxSteps",
+    "FileReadError::InvalidFieldMaxBattery",
+    "FileReadError::InvalidFormatMultipleDocks",
+    "FileReadError::InvalidFormatMissingDock"};
