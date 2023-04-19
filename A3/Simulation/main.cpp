@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
           if (!summary_only)
             sim.dump(get_fname(simulators[hindex].file_name,
                                algorithms[aindex].file_name));
-          scores[aindex][hindex] = 0; // sim.getScore();
+          scores[aindex][hindex] = sim.getScore();
         }
       }
     }
