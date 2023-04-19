@@ -53,12 +53,13 @@ int main(int argc, char **argv) {
   bool valid_simulator_found = false, valid_algo_found = true;
 
   for (int index = 0; index < house_files.size(); index++) {
-    std::stringstream error_buffer;
     simulators[index].file_name = house_files[index];
-    if (simulators[index].sim.readHouseFile(simulators[index].file_name,
-                                            error_buffer) < 0) {
-      std::cout << "Error loading simulator with house "
-                << simulators[index].file_name << std::endl;
+
+    auto err = simulators[index].sim.readHouseFile(house_files[index]);
+    if ((int)err < 0) {
+      std::cerr << err << " at House File:" << house_files[index]
+                << ". Skipping house file" << std::endl;
+
       std::ofstream out_error;
       out_error.open(getStem(simulators[index].file_name) +
                      std::string(ERROR_EXTENSION_));
@@ -70,12 +71,13 @@ int main(int argc, char **argv) {
         std::cout << "Skipping writing to error file" << std::endl;
         continue;
       }
-      out_error << error_buffer.str() << std::endl;
+      out_error << err << std::endl;
       out_error << "File read error " << simulators[index].file_name
                 << ". Skipping house file" << std::endl;
       out_error.close();
       continue;
     }
+
     simulators[index].is_valid = true;
     valid_simulator_found = true;
     std::cout << "Simulator " << simulators[index].file_name
@@ -179,8 +181,7 @@ int main(int argc, char **argv) {
       for (int hindex = 0; hindex < simulators.size(); hindex++) {
         if (simulators[hindex].is_valid) {
           Simulator sim;
-          std::stringstream buff;
-          sim.readHouseFile(simulators[hindex].file_name, buff);
+          sim.readHouseFile(simulators[hindex].file_name);
           auto algo = AlgorithmRegistrar::getAlgorithmRegistrar().begin() +
                       algorithms[aindex].factory_idx;
           auto algorithm = algo->create();

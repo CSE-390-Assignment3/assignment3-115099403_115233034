@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../include/ErrorCodes.h"
+#include "../include/House.h"
+#include "../include/RobotState.h"
 
 #include <string>
 #include <vector>
@@ -11,7 +13,11 @@
  */
 double parseInt(std::string input);
 
-size_t readAEqb(std::string input, std::string varname);
+long readAEqb(std::string input, std::string varname);
+
+FileReadError populateInput(House &house, RobotState &robot_state,
+                            size_t &max_steps,
+                            const std::string &input_filename);
 
 ArgumentsError processArguments(int argc, char **argv, std::string &house,
                                 std::string &algo);
