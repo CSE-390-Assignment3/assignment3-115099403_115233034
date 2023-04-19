@@ -24,6 +24,10 @@ struct SimParams {
   bool is_valid = false;
 };
 
+void generateSummary(std::vector<SimParams> &sims,
+                     std::vector<AlgoParams> &algos,
+                     std::vector<std::vector<long>> &scores);
+
 int main(int argc, char **argv) {
   std::string house_path = "", algo_path = "";
   bool summary_only = false;
@@ -52,6 +56,9 @@ int main(int argc, char **argv) {
   std::vector<SimParams> simulators(house_files.size());
   /* Init Algo struct*/
   std::vector<AlgoParams> algorithms(algo_files.size());
+
+  std::vector<std::vector<long>> scores(algorithms.size(),
+                                        std::vector<long>(simulators.size()));
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
@@ -186,6 +193,7 @@ int main(int argc, char **argv) {
           if (!summary_only)
             sim.dump(get_fname(simulators[hindex].file_name,
                                algorithms[aindex].file_name));
+          scores[aindex][hindex] = 0; // sim.getScore();
         }
       }
     }
@@ -200,4 +208,51 @@ int main(int argc, char **argv) {
     }
   }
   return 0;
+}
+
+void generateSummary(std::vector<SimParams> &sims,
+                     std::vector<AlgoParams> &algos,
+                     std::vector<std::vector<long>> &scores) {
+  std::ofstream outfile("summary.csv");
+  if (!outfile.is_open()) {
+    std::cerr << "SummaryFileOpenError: Unable to create output file."
+              << std::endl
+              << "Stopping summary generation.";
+    return;
+  }
+
+  std::stringstream outfile_row_ss;
+  std::string outfile_row;
+
+  outfile_row_ss << "Algo/House,";
+  for (auto &sim : sims) {
+    if (sim.is_valid)
+      outfile_row_ss << sim.file_name << ",";
+    std::cout << sim.file_name << ",";
+  }
+  outfile_row = outfile_row_ss.str();
+  outfile_row.pop_back();
+  std::cout << outfile_row << std::endl;
+  outfile << outfile_row << std::endl;
+
+  for (auto aindex = 0; aindex < algos.size(); aindex++) {
+    if (algos[aindex].is_algo_valid) {
+
+      outfile_row_ss.str(std::string()); // empty the string stream
+      outfile_row_ss << algos[aindex].file_name << ",";
+
+      for (auto sindex = 0; sindex < sims.size(); sindex++) {
+        if (sims[sindex].is_valid) {
+          outfile_row_ss << std::to_string(scores[aindex][sindex]) << ",";
+        }
+      }
+
+      outfile_row = outfile_row_ss.str();
+      outfile_row.pop_back();
+      std::cout << outfile_row << std::endl;
+      outfile << outfile_row << std::endl;
+    }
+  }
+
+  outfile.close();
 }
