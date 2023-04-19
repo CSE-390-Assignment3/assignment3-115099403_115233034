@@ -18,14 +18,6 @@ std::ostream &operator<<(std::ostream &out, const Step &step) {
 }
 
 std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
-  static std::string string_filereaderror[] = {
-      "FileReadError::Invalid", "FileReadError::InvalidName",
-      "FileReadError::InvalidValue", "FileReadError::InvalidFormat"};
-  return out << string_filereaderror[static_cast<int>(error) -
-                                     static_cast<int>(FileReadError::None)];
-}
-
-std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
   return out << string_FileReadError[static_cast<int>(error) -
                                      static_cast<int>(FileReadError::Invalid)];
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 enum class ArgumentsError {
   // Note: add as per need
@@ -22,7 +23,7 @@ enum class FileReadError {
   InvalidFormatMissingDock,
 };
 
-std::string string_FileReadError[] = {
+static std::string string_FileReadError[] = {
     "FileReadError::Invalid",
     "FileReadError::InvalidValue",
     "FileReadError::InvalidInputFile",
@@ -32,4 +33,5 @@ std::string string_FileReadError[] = {
     "FileReadError::InvalidFieldMaxSteps",
     "FileReadError::InvalidFieldMaxBattery",
     "FileReadError::InvalidFormatMultipleDocks",
-    "FileReadError::InvalidFormatMissingDock"};
+    "FileReadError::InvalidFormatMissingDock",
+};
