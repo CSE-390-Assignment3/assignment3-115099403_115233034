@@ -26,11 +26,14 @@ struct SimParams {
 
 int main(int argc, char **argv) {
   std::string house_path = "", algo_path = "";
+  bool summary_only = false;
 
-  processArguments(argc, argv, house_path, algo_path) != ArgumentsError::None;
+  processArguments(argc, argv, house_path, algo_path, summary_only) !=
+      ArgumentsError::None;
   std::cout << "ArgumentsParsing Success!!" << std::endl;
 
   std::cout << "House path: " << house_path << ", Algo path: " << algo_path
+            << (summary_only ? " and summary_only flag enabled" : "")
             << std::endl;
 
   auto algo_files = parseDirectory(algo_path, ALGO_EXTENSION_);
@@ -162,16 +165,6 @@ int main(int argc, char **argv) {
   std::cout << "AlgorithmRegistrar count "
             << AlgorithmRegistrar::getAlgorithmRegistrar().count() << std::endl;
 
-  // for (const auto &algo : AlgorithmRegistrar::getAlgorithmRegistrar()) {
-  //   auto algorithm = algo.create();
-  //   simulator.setAlgorithm(*algorithm);
-  //   simulator.run();
-  //   simulator.dump("output.txt");
-  //   std::cout << algo.name() << ": " <<
-  //   static_cast<int>(algorithm->nextStep())
-  //             << std::endl;
-  // }
-
   auto get_fname = [=](auto hname, auto aname) {
     return getStem(hname) + "-" + getStem(aname) + ".txt";
   };
@@ -190,8 +183,9 @@ int main(int argc, char **argv) {
                                  algorithms[aindex].file_name)
                     << std::endl;
           sim.run();
-          sim.dump(get_fname(simulators[hindex].file_name,
-                             algorithms[aindex].file_name));
+          if (!summary_only)
+            sim.dump(get_fname(simulators[hindex].file_name,
+                               algorithms[aindex].file_name));
         }
       }
     }

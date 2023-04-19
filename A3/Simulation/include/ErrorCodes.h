@@ -3,8 +3,8 @@
 
 enum class ArgumentsError {
   // Note: add as per need
-  None = -100,
-  Incomplete,
+  None = 0,
+  Incomplete = -100,
   MissingHouse,
   MissingAlgo,
 };
