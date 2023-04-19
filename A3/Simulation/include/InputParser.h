@@ -20,7 +20,7 @@ FileReadError populateInput(House &house, RobotState &robot_state,
                             const std::string &input_filename);
 
 ArgumentsError processArguments(int argc, char **argv, std::string &house,
-                                std::string &algo);
+                                std::string &algo, bool &summary_only);
 
 std::vector<std::string>
 parseDirectory(std::string dirpath, std::string extension, bool trynext = true);

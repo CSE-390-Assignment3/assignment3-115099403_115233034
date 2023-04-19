@@ -183,8 +183,8 @@ std::vector<std::string> parseDirectory(std::string dirpath,
 }
 
 ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
-                                std::string &out_algo) {
-  if (argc < 3) {
+                                std::string &out_algo, bool &summary_only) {
+  if (argc < 1) {
     std::cerr << "ArgumentsParsing Error Not enough number of arguments "
               << std::endl;
     return ArgumentsError::Incomplete;
@@ -192,7 +192,7 @@ ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
 
   bool house_path_found = false, algo_path_found = false;
 
-  std::string args_list[] = {"-house_path=", "-algo_path="};
+  std::string args_list[] = {"-house_path=", "-algo_path=", "-summary_only"};
 
   for (int i = 1; i < argc; i++) {
     std::string arg(argv[i]);
@@ -205,6 +205,9 @@ ArgumentsError processArguments(int argc, char **argv, std::string &out_house,
       // algo path
       algo_path_found = true;
       out_algo = arg.substr(11);
+    }
+    if (arg.substr(0, 13) == args_list[2]) {
+      summary_only = true;
     }
   }
 
