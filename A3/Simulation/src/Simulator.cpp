@@ -74,6 +74,7 @@ void Simulator::run() {
   // }
   // std::cout << "After simulation " << house_;
 }
+
 void Simulator::dump(std::string output_file_name) {
   std::ofstream outfile(output_file_name);
   if (!outfile) {
@@ -88,11 +89,32 @@ void Simulator::dump(std::string output_file_name) {
           << ((robot_state_.getPosition() == house_.getDockPos()) ? "TRUE"
                                                                   : "FALSE")
           << std::endl;
-  // TODO: replace 0 with score function
-  outfile << "Score = " << 0 << std::endl;
+  outfile << "Score = " << getScore() << std::endl;
 
   for (auto step : step_list_)
     outfile << step;
   outfile << std::endl;
   outfile.close();
+}
+
+long Simulator::getScore() {
+  if (score_ != -1)
+    return score_;
+
+  // If DEAD =>
+  //     Score = MaxSteps + DirtLeft * 300 + 2000
+  // Otherwise, If reported FINISHED and robot is NOT InDock  =>
+  //     Score = MaxSteps + DirtLeft * 300 + 3000
+  // Otherwise =>
+  //     Score = NumSteps + DirtLeft * 300 + (InDock? 0 : 1000)
+
+  if (final_state_ == "DEAD") {
+    score_ = max_steps_ + house_.totDirt() * 300 + 2000;
+  } else if (final_state_ == "FINISHED" && !isRobotInDock()) {
+    score_ = max_steps_ + house_.totDirt() * 300 + 3000;
+  } else {
+    score_ = steps_ + house_.totDirt() * 300 + (isRobotInDock() ? 0 : 1000);
+  }
+
+  return score_;
 }
