@@ -30,7 +30,6 @@ struct Position {
 std::ostream &operator<<(std::ostream &out, const Position &pos);
 std::ostream &operator<<(std::ostream &out, const Step &step);
 std::ostream &operator<<(std::ostream &out, const FileReadError &error);
-std::ostream &operator<<(std::ostream &out, const FileReadError &error);
 
 Direction reverse(const Direction &d);
 Step reverse(const Step &s);
