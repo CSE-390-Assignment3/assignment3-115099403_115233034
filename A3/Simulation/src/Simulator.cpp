@@ -30,6 +30,7 @@ FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
 void Simulator::run() {
   bool stop = false, error = true;
   final_state_ = "WORKING";
+  debug_ostream << "Before simulation: " << house_;
   while (steps_ <= max_steps_) {
     // debug_ostream << "Simulator::step " << steps_ << " pos "
     //           << robot_state_.getPosition()
@@ -69,14 +70,8 @@ void Simulator::run() {
     steps_++;
     // debug_ostream << currentStep << " " << house_.totDirt() << std::endl;
   }
-  // if (final_state_ == "FINISHED") {
-  //   if (robot_state_.battery() == 0 &&
-  //       robot_state_.getPosition() != house_.getDockPos())
-  //     final_state_ = "DEAD";
-  // } else {
-  //   final_state_ = "WORKING";
-  // }
-  // debug_ostream << "After simulation " << house_;
+  debug_ostream << "After simulation: " << house_;
+  debug_ostream << final_state_ << std::endl;
 }
 
 void Simulator::dump(std::string output_file_name) {
