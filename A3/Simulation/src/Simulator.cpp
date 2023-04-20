@@ -47,16 +47,14 @@ void Simulator::run() {
       }
       if (!error) {
         house_.clean(robot_state_.getPosition());
-        if (currentStep == Step::Stay &&
-            robot_state_.getPosition() == house_.getDockPos()) {
+        if (currentStep == Step::Stay && isRobotInDock()) {
           robot_state_.charge();
         } else {
           robot_state_.step(currentStep);
         }
       }
     }
-    if (robot_state_.battery() == 0 &&
-        robot_state_.getPosition() != house_.getDockPos()) {
+    if (robot_state_.battery() == 0 && !isRobotInDock()) {
       final_state_ = "DEAD";
       std::cout << "ERROR!! ROBOT REACHED DEAD STATE, STOPPING SIMULATOR"
                 << std::endl;
@@ -85,10 +83,7 @@ void Simulator::dump(std::string output_file_name) {
   outfile << "NumSteps = " << steps_ << std::endl;
   outfile << "DirtLeft = " << house_.totDirt() << std::endl;
   outfile << "Status = " << final_state_ << std::endl;
-  outfile << "InDock = "
-          << ((robot_state_.getPosition() == house_.getDockPos()) ? "TRUE"
-                                                                  : "FALSE")
-          << std::endl;
+  outfile << "InDock = " << ((isRobotInDock()) ? "TRUE" : "FALSE") << std::endl;
   outfile << "Score = " << getScore() << std::endl;
 
   for (auto step : step_list_)
