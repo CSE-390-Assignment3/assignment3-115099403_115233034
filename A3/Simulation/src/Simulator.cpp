@@ -18,6 +18,9 @@ void Simulator::setAlgorithm(AbstractAlgorithm &algorithm) {
 }
 
 FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
+  if (debug_ostream.is_open())
+    debug_ostream.close();
+  debug_ostream.open(getStem(houseFilePath) + ".out");
   return populateInput(house_, robot_state_, max_steps_, houseFilePath);
 }
 
@@ -25,14 +28,14 @@ void Simulator::run() {
   bool stop = false, error = true;
   final_state_ = "WORKING";
   while (steps_ <= max_steps_) {
-    // std::cout << "Simulator::step " << steps_ << " pos "
+    // debug_ostream << "Simulator::step " << steps_ << " pos "
     //           << robot_state_.getPosition()
     //           << " Battery: " << battery_meter_.getBatteryState()
     //           << " Dirt: " << dirt_sensor_.dirtLevel() << std::endl;
     error = false;
-    // std::cout << __PRETTY_FUNCTION__ << " before nextStep" << std::endl;
+    // debug_ostream << __PRETTY_FUNCTION__ << " before nextStep" << std::endl;
     Step currentStep = algo->nextStep();
-    // std::cout << "Simulator::step Next step " << std::endl;
+    // debug_ostream << "Simulator::step Next step " << std::endl;
     /** DEAD case handle */
     step_list_.push_back(str(currentStep)[0]);
     if (currentStep == Step::Finish) {
@@ -41,8 +44,8 @@ void Simulator::run() {
     } else {
       if (currentStep != Step::Stay &&
           wall_sensor_.isWall(static_cast<Direction>(currentStep))) {
-        std::cout << "ERROR!! Running into a wall : unexpected behaviour"
-                  << std::endl;
+        debug_ostream << "ERROR!! Running into a wall : unexpected behaviour"
+                      << std::endl;
         error = true;
       }
       if (!error) {
@@ -56,12 +59,12 @@ void Simulator::run() {
     }
     if (robot_state_.battery() == 0 && !isRobotInDock()) {
       final_state_ = "DEAD";
-      std::cout << "ERROR!! ROBOT REACHED DEAD STATE, STOPPING SIMULATOR"
-                << std::endl;
+      debug_ostream << "ERROR!! ROBOT REACHED DEAD STATE, STOPPING SIMULATOR"
+                    << std::endl;
       break;
     }
     steps_++;
-    // std::cout << currentStep << " " << house_.totDirt() << std::endl;
+    // debug_ostream << currentStep << " " << house_.totDirt() << std::endl;
   }
   // if (final_state_ == "FINISHED") {
   //   if (robot_state_.battery() == 0 &&
@@ -70,7 +73,7 @@ void Simulator::run() {
   // } else {
   //   final_state_ = "WORKING";
   // }
-  // std::cout << "After simulation " << house_;
+  // debug_ostream << "After simulation " << house_;
 }
 
 void Simulator::dump(std::string output_file_name) {
