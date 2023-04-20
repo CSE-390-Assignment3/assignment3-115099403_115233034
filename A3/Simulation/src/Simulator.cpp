@@ -16,11 +16,14 @@ void Simulator::setAlgorithm(AbstractAlgorithm &algorithm) {
   algo->setWallsSensor(wall_sensor_);
   algo->setBatteryMeter(battery_meter_);
 }
+void Simulator::setAlgorithmName(std::string algo_name) {
+  algo_name_ = algo_name;
+}
 
 FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
   if (debug_ostream.is_open())
     debug_ostream.close();
-  debug_ostream.open(getStem(houseFilePath) + ".out");
+  debug_ostream.open(getStem(houseFilePath) + "-" + algo_name_ + ".out");
   return populateInput(house_, robot_state_, max_steps_, houseFilePath);
 }
 

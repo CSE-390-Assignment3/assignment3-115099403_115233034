@@ -33,6 +33,7 @@ private:
 
   long score_ = -1;
   std::ofstream debug_ostream;
+  std::string algo_name_;
 
   int initSensors();
 
@@ -44,6 +45,7 @@ public:
   };
   FileReadError readHouseFile(const std::string &house_file_path);
   void setAlgorithm(AbstractAlgorithm &algorithm);
+  void setAlgorithmName(std::string algo_name);
   void run();
   void dump(std::string outFileName);
   long getScore();
