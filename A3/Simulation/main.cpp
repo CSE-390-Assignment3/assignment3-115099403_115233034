@@ -207,6 +207,7 @@ int main(int argc, char **argv) {
       dlclose(algorithms[aindex].handle);
     }
   }
+  generateSummary(simulators, algorithms, scores);
   return 0;
 }
 
