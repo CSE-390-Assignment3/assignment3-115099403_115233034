@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Algorithm_1)
+project(Algorithm_115099403_115233034_BFS)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -19,14 +19,14 @@ set(ALGO_COMMON_INCLUDES
     )
 
 set(ALGO_INCLUDES
-    ${PROJECT_SOURCE_DIR}/Algorithm/include/Algorithm_1.h
+    ${PROJECT_SOURCE_DIR}/Algorithm/include/Algorithm_115099403_115233034_BFS.h
     ${PROJECT_SOURCE_DIR}/Algorithm/include/types.h
     ${PROJECT_SOURCE_DIR}/Algorithm/include/Utils.h
     ${PROJECT_SOURCE_DIR}/Algorithm/include/HouseManager.h
     )
 
 add_library(${PROJECT_NAME} SHARED 
-    ${PROJECT_SOURCE_DIR}/src/Algorithm_1.cpp
+    ${PROJECT_SOURCE_DIR}/src/Algorithm_115099403_115233034_BFS.cpp
     ${PROJECT_SOURCE_DIR}/src/HouseManager.cpp
     ${PROJECT_SOURCE_DIR}/src/Utils.cpp
     )
@@ -40,4 +40,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/algo_dir/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/libAlgorithm_1.so ${CMAKE_BINARY_DIR}/algo_dir/)
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/libAlgorithm_115099403_115233034_BFS.so ${CMAKE_BINARY_DIR}/algo_dir/)

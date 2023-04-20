@@ -1,8 +1,6 @@
-#include <iostream>
-// #include "Simulation/Simulator.h"
-// #include "AlgorithmCommon/Algorithm_1.h"
 #include "../Common/AlgorithmRegistrar.h"
 #include <dlfcn.h>
+#include <iostream>
 
 #include "include/Config.h"
 #include "include/InputParser.h"
@@ -29,8 +27,14 @@ struct SimParams {
 struct RunnableParams {
   std::string h_fname;
   std::string a_fname;
+  int af_index;
+  int h_index;
   int a_index;
 };
+
+void generateSummary(std::vector<SimParams> &sims,
+                     std::vector<AlgoParams> &algos,
+                     std::vector<std::vector<long>> &scores);
 
 CmdArgs cmd_args_;
 
@@ -40,7 +44,8 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
 bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
                        std::vector<std::string> algo_files);
 
-void worker(int t_id, std::vector<RunnableParams> runnable_params) {
+void worker(int t_id, std::vector<std::vector<long>> &scores,
+            std::vector<RunnableParams> &runnable_params) {
   // std::cout << "Thread ID: " << std::this_thread::get_id() << " " << t_id <<
   // " "
   //           << runnable_params.size() << " \nnum_threads "
@@ -54,13 +59,14 @@ void worker(int t_id, std::vector<RunnableParams> runnable_params) {
     Simulator sim;
     sim.readHouseFile(param.h_fname);
     auto algo =
-        AlgorithmRegistrar::getAlgorithmRegistrar().begin() + param.a_index;
+        AlgorithmRegistrar::getAlgorithmRegistrar().begin() + param.af_index;
     auto algorithm = algo->create();
     sim.setAlgorithm(*algorithm);
     std::cout << get_fname(param.h_fname, param.h_fname) << std::endl;
     sim.run();
     if (!cmd_args_.summary_only)
       sim.dump(get_fname(param.h_fname, param.h_fname));
+    scores[param.a_index][param.h_index] = sim.getScore();
     idx += cmd_args_.num_threads;
   }
 }
@@ -91,6 +97,9 @@ int main(int argc, char **argv) {
   std::vector<SimParams> simulators(house_files.size());
   /* Init Algo struct*/
   std::vector<AlgoParams> algorithms(algo_files.size());
+
+  std::vector<std::vector<long>> scores(algorithms.size(),
+                                        std::vector<long>(simulators.size()));
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
@@ -124,7 +133,9 @@ int main(int argc, char **argv) {
           RunnableParams param;
           param.h_fname = simulators[hindex].file_name;
           param.a_fname = algorithms[aindex].file_name;
-          param.a_index = algorithms[aindex].factory_idx;
+          param.af_index = algorithms[aindex].factory_idx;
+          param.a_index = aindex;
+          param.h_index = hindex;
           runnable_params.push_back(std::move(param));
 
           // runnable_sims.back()->run();
@@ -142,7 +153,7 @@ int main(int argc, char **argv) {
 
   for (int index = 0; index < cmd_args_.num_threads; index++) {
     runnable_threads[index] =
-        std::thread(worker, index, std::ref(runnable_params));
+        std::thread(worker, index, std::ref(scores), std::ref(runnable_params));
   }
 
   for (int index = 0; index < cmd_args_.num_threads; index++) {
@@ -157,6 +168,7 @@ int main(int argc, char **argv) {
       dlclose(algorithms[aindex].handle);
     }
   }
+  generateSummary(simulators, algorithms, scores);
   return 0;
 }
 
@@ -261,4 +273,51 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
               << " loaded successfully " << std::endl;
   }
   return found;
+}
+
+void generateSummary(std::vector<SimParams> &sims,
+                     std::vector<AlgoParams> &algos,
+                     std::vector<std::vector<long>> &scores) {
+  std::ofstream outfile("summary.csv");
+  if (!outfile.is_open()) {
+    std::cerr << "SummaryFileOpenError: Unable to create output file."
+              << std::endl
+              << "Stopping summary generation.";
+    return;
+  }
+
+  std::stringstream outfile_row_ss;
+  std::string outfile_row;
+
+  outfile_row_ss << "Algo/House,";
+  for (auto &sim : sims) {
+    if (sim.is_valid)
+      outfile_row_ss << sim.file_name << ",";
+    std::cout << sim.file_name << ",";
+  }
+  outfile_row = outfile_row_ss.str();
+  outfile_row.pop_back();
+  std::cout << outfile_row << std::endl;
+  outfile << outfile_row << std::endl;
+
+  for (auto aindex = 0; aindex < algos.size(); aindex++) {
+    if (algos[aindex].is_algo_valid) {
+
+      outfile_row_ss.str(std::string()); // empty the string stream
+      outfile_row_ss << algos[aindex].file_name << ",";
+
+      for (auto sindex = 0; sindex < sims.size(); sindex++) {
+        if (sims[sindex].is_valid) {
+          outfile_row_ss << std::to_string(scores[aindex][sindex]) << ",";
+        }
+      }
+
+      outfile_row = outfile_row_ss.str();
+      outfile_row.pop_back();
+      std::cout << outfile_row << std::endl;
+      outfile << outfile_row << std::endl;
+    }
+  }
+
+  outfile.close();
 }
