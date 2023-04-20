@@ -179,11 +179,14 @@ int main(int argc, char **argv) {
       for (int hindex = 0; hindex < simulators.size(); hindex++) {
         if (simulators[hindex].is_valid) {
           Simulator sim;
+          sim.setDebugFileName(get_fname(simulators[hindex].file_name,
+                                         algorithms[aindex].file_name));
           sim.readHouseFile(simulators[hindex].file_name);
           auto algo = AlgorithmRegistrar::getAlgorithmRegistrar().begin() +
                       algorithms[aindex].factory_idx;
           auto algorithm = algo->create();
           sim.setAlgorithm(*algorithm);
+
           std::cout << get_fname(simulators[hindex].file_name,
                                  algorithms[aindex].file_name)
                     << std::endl;

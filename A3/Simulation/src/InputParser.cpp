@@ -135,15 +135,15 @@ FileReadError populateInput(House &house, RobotState &robot_state,
       break;
   }
   if (!dock_found) {
-    std::cout << "ERROR!! Invalid House file no dock found!!" << std::endl;
+    // std::cout << "ERROR!! Invalid House file no dock found!!" << std::endl;
     return FileReadError::InvalidFormatMissingDock;
   }
   myfile.close();
 
   house.init(data);
   robot_state.init(max_robot_battery_, house.getDockPos());
-  std::cout << "Robot: max_robot_battery:" << max_robot_battery_ << std::endl;
-  std::cout << house;
+  // std::cout << "Robot: max_robot_battery:" << max_robot_battery_ <<
+  // std::endl; std::cout << house;
   return FileReadError::None;
 }
 
