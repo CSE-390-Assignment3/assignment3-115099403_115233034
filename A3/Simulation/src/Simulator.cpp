@@ -2,6 +2,7 @@
 #include "../include/ErrorCodes.h"
 #include "../include/InputParser.h"
 #include "../include/Utils.h"
+#include "../include/config.h"
 
 Simulator::Simulator()
     : robot_state_(), dirt_sensor_(house_, robot_state_),
@@ -17,7 +18,8 @@ void Simulator::setAlgorithm(AbstractAlgorithm &algorithm) {
   algo->setBatteryMeter(battery_meter_);
 }
 void Simulator::setDebugFileName(std::string debug_file_name) {
-  debug_file_name_ = debug_file_name + ".debug";
+  debug_file_name_ =
+      (debug_file_name.size() ? debug_file_name : "default") + DEBUG_EXTENSION_;
 }
 
 FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
