@@ -143,7 +143,7 @@ FileReadError populateInput(House &house, RobotState &robot_state,
   house.init(data);
   robot_state.init(max_robot_battery_, house.getDockPos());
   std::cout << "Robot: max_robot_battery:" << max_robot_battery_ << std::endl;
-
+  std::cout << house;
   return FileReadError::None;
 }
 

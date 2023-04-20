@@ -1,8 +1,6 @@
-#include <iostream>
-// #include "Simulation/Simulator.h"
-// #include "AlgorithmCommon/Algorithm_1.h"
 #include "../Common/AlgorithmRegistrar.h"
 #include <dlfcn.h>
+#include <iostream>
 
 #include "include/Config.h"
 #include "include/InputParser.h"

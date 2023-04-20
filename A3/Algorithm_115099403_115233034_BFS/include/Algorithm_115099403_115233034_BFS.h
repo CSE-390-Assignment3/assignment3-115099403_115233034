@@ -10,7 +10,7 @@
 #include <memory>
 #include <stack>
 
-class Algorithm_1 : public AbstractAlgorithm {
+class Algorithm_115099403_115233034_BFS : public AbstractAlgorithm {
 private:
   int steps_;
   std::size_t max_steps_;
@@ -43,8 +43,8 @@ private:
   // std::vector<std::pair<int, int>> neighbors(std::pair<int, int> point);
 
 public:
-  Algorithm_1();
-  Algorithm_1(AbstractAlgorithm &algorithm);
+  Algorithm_115099403_115233034_BFS();
+  Algorithm_115099403_115233034_BFS(AbstractAlgorithm &algorithm);
 
   void setMaxSteps(std::size_t maxSteps) override;
   void setWallsSensor(const WallsSensor &walls_sensor) override;
