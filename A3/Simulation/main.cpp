@@ -6,14 +6,19 @@
 #include "include/InputParser.h"
 #include "include/Simulator.h"
 
+#include "pthread.h"
+#include <chrono>
 #include <mutex>
 #include <queue>
+#include <sched.h>
+#include <set>
 #include <thread>
 
 using AlgorithmPtr = std::unique_ptr<AlgorithmRegistrar>;
+struct RunnableParams;
 
 CmdArgs cmd_args_;
-std::mutex mtx;
+std::mutex mtx, running_params_mtx;
 
 struct AlgoParams {
   std::string file_name;
@@ -35,7 +40,15 @@ struct RunnableParams {
   int af_index;
   int h_index;
   int a_index;
+  int t_id;
+
+  std::chrono::time_point<std::chrono::system_clock> start_ts;
+  size_t timeout = 1000; // in ms TODO: change to dynamic based on max_steps_
 };
+
+bool operator<(const RunnableParams &lhs, const RunnableParams &rhs) {
+  return lhs.t_id < rhs.t_id;
+}
 
 void generateSummary(std::vector<SimParams> &sims,
                      std::vector<AlgoParams> &algos,
@@ -48,7 +61,8 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
                        std::vector<std::string> algo_files);
 
 void worker(int t_id, std::vector<std::vector<long>> &scores,
-            std::queue<RunnableParams> &runnable_params) {
+            std::queue<RunnableParams> &runnable_params,
+            std::set<RunnableParams> &running_params) {
   // std::cout << "Thread ID: " << std::this_thread::get_id() << " " << t_id <<
   // " "
   //           << runnable_params.size() << " \nnum_threads "
@@ -68,6 +82,12 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     runnable_params.pop();
     mtx.unlock();
 
+    running_params_mtx.lock();
+    param.t_id = t_id;
+    param.start_ts = std::chrono::system_clock::now();
+    running_params.insert(param);
+    running_params_mtx.unlock();
+
     // RunnableParams param = runnable_params[idx];
     Simulator sim;
     sim.setDebugFileName(get_fname(param.h_fname, param.a_fname));
@@ -81,7 +101,64 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     if (!cmd_args_.summary_only)
       sim.dump(get_fname(param.h_fname, param.a_fname));
     scores[param.a_index][param.h_index] = sim.getScore();
-    idx += cmd_args_.num_threads;
+
+    running_params_mtx.lock();
+    std::cout << "\tFinished pair: "
+              << (getStem(param.a_fname) + '-' + getStem(param.h_fname))
+              << std::endl;
+    // TODO: verify if present
+    running_params.erase(param);
+    running_params_mtx.unlock();
+  }
+}
+
+void monitor(std::vector<std::vector<long>> &scores,
+             std::queue<RunnableParams> &runnable_params,
+             std::set<RunnableParams> &running_params,
+             std::vector<std::unique_ptr<std::thread>> &runnable_threads) {
+
+  std::cout << "monitor thread id:" << std::this_thread::get_id() << "\n";
+  std::cout << "monitor pthread id:" << pthread_self() << "\n";
+  while (1) {
+    // TODO: sleep for a long time
+    std::this_thread::sleep_for(std::chrono::milliseconds(
+        500)); // maximum of all house max_steps_ * 1ms
+    std::set<RunnableParams> to_terminate_params;
+    running_params_mtx.lock();
+    for (auto &running_param : running_params) {
+      if (running_param.start_ts +
+              std::chrono::milliseconds(running_param.timeout) >
+          std::chrono::system_clock::now()) {
+
+        // TODO: common simulator object or dump output or dump log
+        // if (!cmd_args_.summary_only)
+        //  sim.dump(get_fname(param.h_fname, param.a_fname));
+        scores[running_param.a_index][running_param.h_index] =
+            0; // MaxSteps * 2 + InitialDirt * 300 + 2000
+
+        std::cout << "\tKilled thread: "
+                  << getStem(running_param.a_fname) + '-' +
+                         getStem(running_param.h_fname)
+                  << std::endl;
+        to_terminate_params.insert(running_param);
+      }
+    }
+    for (auto &to_terminate_param : to_terminate_params) {
+      running_params.erase(to_terminate_param);
+      std::unique_ptr<std::thread> hogging_thread(
+          std::move(runnable_threads[to_terminate_param.t_id]));
+
+      // TODO: kill thread or reduce priority
+      struct sched_param params;
+      params.sched_priority = 0;
+      // sched_setscheduler(hogging_thread->get_id(), SCHED_IDLE, &params);
+
+      runnable_threads[to_terminate_param.t_id] = std::make_unique<std::thread>(
+          worker, to_terminate_param.t_id, std::ref(scores),
+          std::ref(runnable_params), std::ref(running_params));
+      runnable_threads[to_terminate_param.t_id]->detach();
+    }
+    running_params_mtx.unlock();
   }
 }
 
@@ -114,6 +191,8 @@ int main(int argc, char **argv) {
 
   std::vector<std::vector<long>> scores(algorithms.size(),
                                         std::vector<long>(simulators.size()));
+  std::vector<std::vector<bool>> timedout(algorithms.size(),
+                                          std::vector<bool>(simulators.size()));
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
@@ -139,6 +218,7 @@ int main(int argc, char **argv) {
             << AlgorithmRegistrar::getAlgorithmRegistrar().count() << std::endl;
 
   std::queue<RunnableParams> runnable_params;
+  std::set<RunnableParams> running_params;
 
   for (int aindex = 0; aindex < algorithms.size(); aindex++) {
     if (algorithms[aindex].is_algo_valid) {
@@ -163,16 +243,33 @@ int main(int argc, char **argv) {
     }
   }
 
-  std::vector<std::thread> runnable_threads(cmd_args_.num_threads);
+  std::vector<std::unique_ptr<std::thread>> runnable_threads(
+      cmd_args_.num_threads);
+
+  std::thread monitor_thread =
+      std::thread(monitor, std::ref(scores), std::ref(runnable_params),
+                  std::ref(running_params), std::ref(runnable_threads));
 
   for (int index = 0; index < cmd_args_.num_threads; index++) {
-    runnable_threads[index] =
-        std::thread(worker, index, std::ref(scores), std::ref(runnable_params));
+    runnable_threads[index] = std::make_unique<std::thread>(
+        worker, index, std::ref(scores), std::ref(runnable_params),
+        std::ref(running_params));
+  }
+  for (int index = 0; index < cmd_args_.num_threads; index++) {
+    runnable_threads[index]->detach();
+  }
+  monitor_thread.detach();
+
+  while (1) {
+    std::this_thread::sleep_for(std::chrono::seconds(
+        1)); // TODO: replace 1s with maxtimeout of available houses
+    mtx.lock();
+    if (runnable_params.empty())
+      break;
+    mtx.unlock();
   }
 
-  for (int index = 0; index < cmd_args_.num_threads; index++) {
-    runnable_threads[index].join();
-  }
+  generateSummary(simulators, algorithms, scores);
 
   algorithms.clear();
   AlgorithmRegistrar::getAlgorithmRegistrar().clear();
@@ -182,7 +279,7 @@ int main(int argc, char **argv) {
       dlclose(algorithms[aindex].handle);
     }
   }
-  generateSummary(simulators, algorithms, scores);
+
   return 0;
 }
 
@@ -292,6 +389,10 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
 void generateSummary(std::vector<SimParams> &sims,
                      std::vector<AlgoParams> &algos,
                      std::vector<std::vector<long>> &scores) {
+  // auto &outfile = std::cout;
+
+  std::cout << "Generating summary.csv:" << std::endl;
+
   std::ofstream outfile("summary.csv");
   if (!outfile.is_open()) {
     std::cerr << "SummaryFileOpenError: Unable to create output file."
@@ -307,11 +408,12 @@ void generateSummary(std::vector<SimParams> &sims,
   for (auto &sim : sims) {
     if (sim.is_valid)
       outfile_row_ss << sim.file_name << ",";
-    std::cout << sim.file_name << ",";
+    // std::cout << sim.file_name << ",";
   }
+
   outfile_row = outfile_row_ss.str();
   outfile_row.pop_back();
-  std::cout << outfile_row << std::endl;
+  // std::cout << outfile_row << std::endl;
   outfile << outfile_row << std::endl;
 
   for (auto aindex = 0; aindex < algos.size(); aindex++) {
@@ -328,7 +430,7 @@ void generateSummary(std::vector<SimParams> &sims,
 
       outfile_row = outfile_row_ss.str();
       outfile_row.pop_back();
-      std::cout << outfile_row << std::endl;
+      // std::cout << outfile_row << std::endl;
       outfile << outfile_row << std::endl;
     }
   }
