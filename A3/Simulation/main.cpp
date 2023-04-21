@@ -6,9 +6,14 @@
 #include "include/InputParser.h"
 #include "include/Simulator.h"
 
+#include <mutex>
+#include <queue>
 #include <thread>
 
 using AlgorithmPtr = std::unique_ptr<AlgorithmRegistrar>;
+
+CmdArgs cmd_args_;
+std::mutex mtx;
 
 struct AlgoParams {
   std::string file_name;
@@ -36,8 +41,6 @@ void generateSummary(std::vector<SimParams> &sims,
                      std::vector<AlgoParams> &algos,
                      std::vector<std::vector<long>> &scores);
 
-CmdArgs cmd_args_;
-
 bool loadTestHouseFiles(std::vector<SimParams> &simulators,
                         std::vector<std::string> house_files);
 
@@ -45,7 +48,7 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
                        std::vector<std::string> algo_files);
 
 void worker(int t_id, std::vector<std::vector<long>> &scores,
-            std::vector<RunnableParams> &runnable_params) {
+            std::queue<RunnableParams> &runnable_params) {
   // std::cout << "Thread ID: " << std::this_thread::get_id() << " " << t_id <<
   // " "
   //           << runnable_params.size() << " \nnum_threads "
@@ -54,18 +57,29 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
   auto get_fname = [=](auto hname, auto aname) {
     return getStem(hname) + "-" + getStem(aname) + ".txt";
   };
-  while (idx < runnable_params.size()) {
-    RunnableParams param = runnable_params[idx];
+  while (!runnable_params.empty()) {
+    RunnableParams param;
+
+    mtx.lock();
+    if (runnable_params.empty()) {
+      return;
+    }
+    param = runnable_params.front();
+    runnable_params.pop();
+    mtx.unlock();
+
+    // RunnableParams param = runnable_params[idx];
     Simulator sim;
+    sim.setDebugFileName(get_fname(param.h_fname, param.a_fname));
     sim.readHouseFile(param.h_fname);
     auto algo =
         AlgorithmRegistrar::getAlgorithmRegistrar().begin() + param.af_index;
     auto algorithm = algo->create();
     sim.setAlgorithm(*algorithm);
-    std::cout << get_fname(param.h_fname, param.h_fname) << std::endl;
+    std::cout << get_fname(param.h_fname, param.a_fname) << std::endl;
     sim.run();
     if (!cmd_args_.summary_only)
-      sim.dump(get_fname(param.h_fname, param.h_fname));
+      sim.dump(get_fname(param.h_fname, param.a_fname));
     scores[param.a_index][param.h_index] = sim.getScore();
     idx += cmd_args_.num_threads;
   }
@@ -124,7 +138,7 @@ int main(int argc, char **argv) {
   std::cout << "AlgorithmRegistrar count "
             << AlgorithmRegistrar::getAlgorithmRegistrar().count() << std::endl;
 
-  std::vector<RunnableParams> runnable_params;
+  std::queue<RunnableParams> runnable_params;
 
   for (int aindex = 0; aindex < algorithms.size(); aindex++) {
     if (algorithms[aindex].is_algo_valid) {
@@ -136,7 +150,7 @@ int main(int argc, char **argv) {
           param.af_index = algorithms[aindex].factory_idx;
           param.a_index = aindex;
           param.h_index = hindex;
-          runnable_params.push_back(std::move(param));
+          runnable_params.push(std::move(param));
 
           // runnable_sims.back()->run();
           // runnable_sims.back().readHouseFile(simulators[hindex].file_name);
