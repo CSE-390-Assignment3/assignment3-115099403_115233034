@@ -6,7 +6,14 @@
 #include "include/InputParser.h"
 #include "include/Simulator.h"
 
+#include <mutex>
+#include <queue>
+#include <thread>
+
 using AlgorithmPtr = std::unique_ptr<AlgorithmRegistrar>;
+
+CmdArgs cmd_args_;
+std::mutex mtx;
 
 struct AlgoParams {
   std::string file_name;
@@ -22,24 +29,74 @@ struct SimParams {
   bool is_valid = false;
 };
 
+struct RunnableParams {
+  std::string h_fname;
+  std::string a_fname;
+  int af_index;
+  int h_index;
+  int a_index;
+};
+
 void generateSummary(std::vector<SimParams> &sims,
                      std::vector<AlgoParams> &algos,
                      std::vector<std::vector<long>> &scores);
 
-int main(int argc, char **argv) {
-  std::string house_path = "", algo_path = "";
-  bool summary_only = false;
+bool loadTestHouseFiles(std::vector<SimParams> &simulators,
+                        std::vector<std::string> house_files);
 
-  processArguments(argc, argv, house_path, algo_path, summary_only) !=
-      ArgumentsError::None;
+bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
+                       std::vector<std::string> algo_files);
+
+void worker(int t_id, std::vector<std::vector<long>> &scores,
+            std::queue<RunnableParams> &runnable_params) {
+  // std::cout << "Thread ID: " << std::this_thread::get_id() << " " << t_id <<
+  // " "
+  //           << runnable_params.size() << " \nnum_threads "
+  //           << cmd_args_.num_threads << std::endl;
+  int idx = t_id;
+  auto get_fname = [=](auto hname, auto aname) {
+    return getStem(hname) + "-" + getStem(aname) + ".txt";
+  };
+  while (!runnable_params.empty()) {
+    RunnableParams param;
+
+    mtx.lock();
+    if (runnable_params.empty()) {
+      return;
+    }
+    param = runnable_params.front();
+    runnable_params.pop();
+    mtx.unlock();
+
+    // RunnableParams param = runnable_params[idx];
+    Simulator sim;
+    sim.setDebugFileName(get_fname(param.h_fname, param.a_fname));
+    sim.readHouseFile(param.h_fname);
+    auto algo =
+        AlgorithmRegistrar::getAlgorithmRegistrar().begin() + param.af_index;
+    auto algorithm = algo->create();
+    sim.setAlgorithm(*algorithm);
+    std::cout << get_fname(param.h_fname, param.a_fname) << std::endl;
+    sim.run();
+    if (!cmd_args_.summary_only)
+      sim.dump(get_fname(param.h_fname, param.a_fname));
+    scores[param.a_index][param.h_index] = sim.getScore();
+    idx += cmd_args_.num_threads;
+  }
+}
+
+int main(int argc, char **argv) {
+  // error handling not needed as all parameters have default value
+  processArguments(argc, argv, cmd_args_); // != ArgumentsError::None;
   std::cout << "ArgumentsParsing Success!!" << std::endl;
 
-  std::cout << "House path: " << house_path << ", Algo path: " << algo_path
-            << (summary_only ? " and summary_only flag enabled" : "")
-            << std::endl;
+  std::cout << "House path: " << cmd_args_.houses_path
+            << ", Algo path: " << cmd_args_.algos_path
+            << (cmd_args_.summary_only ? " and summary_only flag enabled" : "")
+            << "\n number of threads " << cmd_args_.num_threads << std::endl;
 
-  auto algo_files = parseDirectory(algo_path, ALGO_EXTENSION_);
-  auto house_files = parseDirectory(house_path, HOUSE_EXTENSION_);
+  auto algo_files = parseDirectory(cmd_args_.algos_path, ALGO_EXTENSION_);
+  auto house_files = parseDirectory(cmd_args_.houses_path, HOUSE_EXTENSION_);
 
   if (false) {
     std::cout << "DEBUG:: algo_files: \n";
@@ -60,6 +117,78 @@ int main(int argc, char **argv) {
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
+  valid_simulator_found = loadTestHouseFiles(simulators, house_files);
+
+  valid_algo_found = loadTestAlgoFiles(algorithms, algo_files);
+
+  if (!valid_algo_found) {
+    std::cerr << "ArgumentsError No valid algo files found in path and current "
+                 "directory, Stopping Simulator."
+              << std::endl;
+    return -1;
+  }
+
+  if (!valid_simulator_found) {
+    std::cerr << "ArgumentsError No valid house files found in path and "
+                 "current directory, Stopping Simulator."
+              << std::endl;
+    return -1;
+  }
+
+  std::cout << "AlgorithmRegistrar count "
+            << AlgorithmRegistrar::getAlgorithmRegistrar().count() << std::endl;
+
+  std::queue<RunnableParams> runnable_params;
+
+  for (int aindex = 0; aindex < algorithms.size(); aindex++) {
+    if (algorithms[aindex].is_algo_valid) {
+      for (int hindex = 0; hindex < simulators.size(); hindex++) {
+        if (simulators[hindex].is_valid) {
+          RunnableParams param;
+          param.h_fname = simulators[hindex].file_name;
+          param.a_fname = algorithms[aindex].file_name;
+          param.af_index = algorithms[aindex].factory_idx;
+          param.a_index = aindex;
+          param.h_index = hindex;
+          runnable_params.push(std::move(param));
+
+          // runnable_sims.back()->run();
+          // runnable_sims.back().readHouseFile(simulators[hindex].file_name);
+          // auto algo = AlgorithmRegistrar::getAlgorithmRegistrar().begin() +
+          //             algorithms[aindex].factory_idx;
+          // auto algorithm = algo->create();
+          // runnable_sims.back().setAlgorithm(*algorithm);
+        }
+      }
+    }
+  }
+
+  std::vector<std::thread> runnable_threads(cmd_args_.num_threads);
+
+  for (int index = 0; index < cmd_args_.num_threads; index++) {
+    runnable_threads[index] =
+        std::thread(worker, index, std::ref(scores), std::ref(runnable_params));
+  }
+
+  for (int index = 0; index < cmd_args_.num_threads; index++) {
+    runnable_threads[index].join();
+  }
+
+  algorithms.clear();
+  AlgorithmRegistrar::getAlgorithmRegistrar().clear();
+
+  for (int aindex = 0; aindex < algo_files.size(); aindex++) {
+    if (algorithms[aindex].dlopen_success) {
+      dlclose(algorithms[aindex].handle);
+    }
+  }
+  generateSummary(simulators, algorithms, scores);
+  return 0;
+}
+
+bool loadTestHouseFiles(std::vector<SimParams> &simulators,
+                        std::vector<std::string> house_files) {
+  bool found = false;
   for (int index = 0; index < house_files.size(); index++) {
     simulators[index].file_name = house_files[index];
 
@@ -87,11 +216,16 @@ int main(int argc, char **argv) {
     }
 
     simulators[index].is_valid = true;
-    valid_simulator_found = true;
+    found = true;
     std::cout << "Simulator " << simulators[index].file_name
               << " loaded successfully " << std::endl;
   }
+  return found;
+}
 
+bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
+                       std::vector<std::string> algo_files) {
+  bool found = false;
   for (int index = 0, valid_count = 0; index < algo_files.size(); index++) {
     auto registrar_count = AlgorithmRegistrar::getAlgorithmRegistrar().count();
     algorithms[index].file_name = algo_files[index];
@@ -141,7 +275,7 @@ int main(int argc, char **argv) {
       }
       algorithms[index].factory_idx = valid_count++;
       algorithms[index].is_algo_valid = true;
-      valid_algo_found = true;
+      found = true;
     } catch (...) {
       if (out_error)
         out_error << "Algorithm create failed : " << algorithms[index].file_name
@@ -152,64 +286,7 @@ int main(int argc, char **argv) {
     std::cout << "Algorithm " << algorithms[index].file_name
               << " loaded successfully " << std::endl;
   }
-
-  if (!valid_algo_found) {
-    std::cerr << "ArgumentsError No valid algo files found in path and current "
-                 "directory, Stopping Simulator."
-              << std::endl;
-    return -1;
-  }
-
-  if (!valid_simulator_found) {
-    std::cerr << "ArgumentsError No valid house files found in path and "
-                 "current directory, Stopping Simulator."
-              << std::endl;
-    return -1;
-  }
-
-  std::cout << "AlgorithmRegistrar count "
-            << AlgorithmRegistrar::getAlgorithmRegistrar().count() << std::endl;
-
-  auto get_fname = [=](auto hname, auto aname) {
-    return getStem(hname) + "-" + getStem(aname) + ".txt";
-  };
-
-  for (int aindex = 0; aindex < algorithms.size(); aindex++) {
-    if (algorithms[aindex].is_algo_valid) {
-      for (int hindex = 0; hindex < simulators.size(); hindex++) {
-        if (simulators[hindex].is_valid) {
-          Simulator sim;
-          sim.setDebugFileName(get_fname(simulators[hindex].file_name,
-                                         algorithms[aindex].file_name));
-          sim.readHouseFile(simulators[hindex].file_name);
-          auto algo = AlgorithmRegistrar::getAlgorithmRegistrar().begin() +
-                      algorithms[aindex].factory_idx;
-          auto algorithm = algo->create();
-          sim.setAlgorithm(*algorithm);
-
-          std::cout << get_fname(simulators[hindex].file_name,
-                                 algorithms[aindex].file_name)
-                    << std::endl;
-          sim.run();
-          if (!summary_only)
-            sim.dump(get_fname(simulators[hindex].file_name,
-                               algorithms[aindex].file_name));
-          scores[aindex][hindex] = sim.getScore();
-        }
-      }
-    }
-  }
-
-  algorithms.clear();
-  AlgorithmRegistrar::getAlgorithmRegistrar().clear();
-
-  for (int aindex = 0; aindex < algo_files.size(); aindex++) {
-    if (algorithms[aindex].dlopen_success) {
-      dlclose(algorithms[aindex].handle);
-    }
-  }
-  generateSummary(simulators, algorithms, scores);
-  return 0;
+  return found;
 }
 
 void generateSummary(std::vector<SimParams> &sims,

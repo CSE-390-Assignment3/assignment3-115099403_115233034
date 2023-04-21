@@ -7,6 +7,13 @@
 #include <string>
 #include <vector>
 
+struct CmdArgs {
+  std::string houses_path = "";
+  std::string algos_path = "";
+  bool summary_only = false;
+  int num_threads = 10;
+};
+
 /**
  * All values in lines 2-5 may or may have spaces around the = sign
  * If the file is invalid you can reject it and print the reason to screen
@@ -19,8 +26,7 @@ FileReadError populateInput(House &house, RobotState &robot_state,
                             size_t &max_steps,
                             const std::string &input_filename);
 
-ArgumentsError processArguments(int argc, char **argv, std::string &house,
-                                std::string &algo, bool &summary_only);
+ArgumentsError processArguments(int argc, char **argv, CmdArgs &cmd_args);
 
 std::vector<std::string>
 parseDirectory(std::string dirpath, std::string extension, bool trynext = true);
