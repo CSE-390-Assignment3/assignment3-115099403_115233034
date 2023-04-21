@@ -4,6 +4,9 @@
 #include "../include/Utils.h"
 #include "../include/config.h"
 
+#include <chrono>
+#include <ctime>
+
 Simulator::Simulator()
     : robot_state_(), dirt_sensor_(house_, robot_state_),
       wall_sensor_(house_, robot_state_), battery_meter_(robot_state_) {}
@@ -30,10 +33,22 @@ FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
 }
 
 void Simulator::run() {
+  auto start_time = std::chrono::system_clock::now();
   bool stop = false, error = true;
   final_state_ = "WORKING";
   debug_ostream << "Before simulation: " << house_;
+  int initial_dirt = house_.totDirt();
   while (steps_ <= max_steps_) {
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now() - start_time)
+            .count() < TIMEOUT_MILLIS) {
+      debug_ostream
+          << "ERROR!! TIMEOUT stopping simulator : unexpected behaviour"
+          << std::endl;
+      score_ = max_steps_ * 2 + initial_dirt * 300 + 2000;
+      break;
+    }
+
     // debug_ostream << "Simulator::step " << steps_ << " pos "
     //           << robot_state_.getPosition()
     //           << " Battery: " << battery_meter_.getBatteryState()
