@@ -23,7 +23,7 @@ std::ostream &operator<<(std::ostream &out, const FileReadError &error) {
 }
 
 std::string str(const Step &step) {
-  static std::string string_step[] = {"North", "South", "East",
-                                      "West",  "stay",  "Finish"};
+  static std::string string_step[] = {"North", "East", "South",
+                                      "West",  "stay", "Finish"};
   return string_step[static_cast<int>(step)];
 }

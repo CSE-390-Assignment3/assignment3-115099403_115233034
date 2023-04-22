@@ -8,7 +8,7 @@
 
 // config
 constexpr Pos DOCK_POS = {0, 0};
-constexpr int BATTERY_BUFF = 2; // can be percentage
+constexpr int BATTERY_BUFF = 1; // can be percentage
 // config end
 
 /**
