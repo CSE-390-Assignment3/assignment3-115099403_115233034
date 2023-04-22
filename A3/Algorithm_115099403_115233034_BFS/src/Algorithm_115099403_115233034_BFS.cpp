@@ -94,6 +94,9 @@ Step Algorithm_115099403_115233034_BFS::work() {
   stack_ = house_manager_.getShortestPath(current_position_, {}, true);
   if (stack_.size() * 2 > max_battery_)
     return Step::Finish;
+  if (stack_.empty()) {
+    return Step::Finish;
+  }
   dir = stack_.top();
   stack_.pop();
   current_position_ = getPosition(current_position_, dir);
