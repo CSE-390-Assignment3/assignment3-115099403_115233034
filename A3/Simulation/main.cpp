@@ -93,12 +93,12 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     sim.setAlgorithm(*algorithm);
     std::cout << get_fname(param.h_fname, param.a_fname) << std::endl;
 
-    running_params_mtx.lock();
     param.t_id = t_id;
     param.start_ts = std::chrono::system_clock::now();
     param.kill_score =
         sim.getMaxSteps() * 2 + sim.getInitialDirt() * 300 + 2000;
     param.timeout = 10 * sim.getMaxSteps();
+    running_params_mtx.lock();
     running_params.insert(param);
     running_params_mtx.unlock();
 
@@ -107,10 +107,10 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
       sim.dump(get_fname(param.h_fname, param.a_fname));
     scores[param.a_index][param.h_index] = sim.getScore();
 
-    running_params_mtx.lock();
     std::cout << "\tFinished pair: "
               << (getStem(param.a_fname) + '-' + getStem(param.h_fname))
               << std::endl;
+    running_params_mtx.lock();
     running_params.erase(param);
     running_params_mtx.unlock();
   }
@@ -268,8 +268,10 @@ int main(int argc, char **argv) {
     std::this_thread::sleep_for(std::chrono::seconds(
         1)); // TODO: replace 1s with maxtimeout of available houses
     mtx.lock();
-    if (runnable_params.empty())
+    if (runnable_params.empty() && running_params.empty()) {
+      mtx.unlock();
       break;
+    }
     mtx.unlock();
   }
 
