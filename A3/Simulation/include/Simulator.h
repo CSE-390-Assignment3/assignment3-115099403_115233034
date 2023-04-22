@@ -20,6 +20,7 @@ private:
   std::size_t max_steps_;
   std::size_t steps_ = 0;
   std::string final_state_ = "";
+  double initial_dirt_;
 
   House house_;
   RobotState robot_state_;
@@ -52,4 +53,6 @@ public:
   inline bool isRobotInDock() const {
     return robot_state_.getPosition() == house_.getDockPos();
   }
+  size_t getMaxSteps() const { return max_steps_; }
+  double getInitialDirt() const { return initial_dirt_; }
 };

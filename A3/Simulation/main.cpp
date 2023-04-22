@@ -8,6 +8,7 @@
 
 #include "pthread.h"
 #include <chrono>
+#include <cstring>
 #include <mutex>
 #include <queue>
 #include <sched.h>
@@ -43,7 +44,8 @@ struct RunnableParams {
   int t_id;
 
   std::chrono::time_point<std::chrono::system_clock> start_ts;
-  size_t timeout = 1000; // in ms TODO: change to dynamic based on max_steps_
+  size_t timeout = 1000;
+  long kill_score = 0;
 };
 
 bool operator<(const RunnableParams &lhs, const RunnableParams &rhs) {
@@ -82,13 +84,6 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     runnable_params.pop();
     mtx.unlock();
 
-    running_params_mtx.lock();
-    param.t_id = t_id;
-    param.start_ts = std::chrono::system_clock::now();
-    running_params.insert(param);
-    running_params_mtx.unlock();
-
-    // RunnableParams param = runnable_params[idx];
     Simulator sim;
     sim.setDebugFileName(get_fname(param.h_fname, param.a_fname));
     sim.readHouseFile(param.h_fname);
@@ -97,6 +92,16 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     auto algorithm = algo->create();
     sim.setAlgorithm(*algorithm);
     std::cout << get_fname(param.h_fname, param.a_fname) << std::endl;
+
+    running_params_mtx.lock();
+    param.t_id = t_id;
+    param.start_ts = std::chrono::system_clock::now();
+    param.kill_score =
+        sim.getMaxSteps() * 2 + sim.getInitialDirt() * 300 + 2000;
+    param.timeout = 10 * sim.getMaxSteps();
+    running_params.insert(param);
+    running_params_mtx.unlock();
+
     sim.run();
     if (!cmd_args_.summary_only)
       sim.dump(get_fname(param.h_fname, param.a_fname));
@@ -106,7 +111,6 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     std::cout << "\tFinished pair: "
               << (getStem(param.a_fname) + '-' + getStem(param.h_fname))
               << std::endl;
-    // TODO: verify if present
     running_params.erase(param);
     running_params_mtx.unlock();
   }
@@ -120,9 +124,9 @@ void monitor(std::vector<std::vector<long>> &scores,
   std::cout << "monitor thread id:" << std::this_thread::get_id() << "\n";
   std::cout << "monitor pthread id:" << pthread_self() << "\n";
   while (1) {
-    // TODO: sleep for a long time
+    // monitor thread should sleep for most of the time
     std::this_thread::sleep_for(std::chrono::milliseconds(
-        500)); // maximum of all house max_steps_ * 1ms
+        500)); // TODO: maximum of all house max_steps_ * 1ms
     std::set<RunnableParams> to_terminate_params;
     running_params_mtx.lock();
     for (auto &running_param : running_params) {
@@ -130,11 +134,11 @@ void monitor(std::vector<std::vector<long>> &scores,
               std::chrono::milliseconds(running_param.timeout) >
           std::chrono::system_clock::now()) {
 
-        // TODO: common simulator object or dump output or dump log
+        // TODO: check if there should be any output file if thread killed
         // if (!cmd_args_.summary_only)
         //  sim.dump(get_fname(param.h_fname, param.a_fname));
         scores[running_param.a_index][running_param.h_index] =
-            0; // MaxSteps * 2 + InitialDirt * 300 + 2000
+            running_param.kill_score; // MaxSteps * 2 + InitialDirt * 300 + 2000
 
         std::cout << "\tKilled thread: "
                   << getStem(running_param.a_fname) + '-' +
@@ -148,10 +152,14 @@ void monitor(std::vector<std::vector<long>> &scores,
       std::unique_ptr<std::thread> hogging_thread(
           std::move(runnable_threads[to_terminate_param.t_id]));
 
-      // TODO: kill thread or reduce priority
+#ifdef _POSIX_VERSION
       struct sched_param params;
       params.sched_priority = 0;
-      // sched_setscheduler(hogging_thread->get_id(), SCHED_IDLE, &params);
+      pid_t pthread_id;
+      auto thread_id = hogging_thread->get_id();
+      std::memcpy(&pthread_id, &thread_id, sizeof(pthread_id));
+      sched_setscheduler(pthread_id, SCHED_IDLE, &params);
+#endif
 
       runnable_threads[to_terminate_param.t_id] = std::make_unique<std::thread>(
           worker, to_terminate_param.t_id, std::ref(scores),

@@ -19,7 +19,12 @@ public:
   void setWallsSensor(const WallsSensor &) override {}
   void setDirtSensor(const DirtSensor &) override {}
   void setBatteryMeter(const BatteryMeter &) override {}
-  Step nextStep() override { return Step::North; }
+  Step nextStep() override {
+    while (1) {
+      ;
+    }
+    return Step::North;
+  }
 };
 
 #endif // A2_ALGO_123456789_H
