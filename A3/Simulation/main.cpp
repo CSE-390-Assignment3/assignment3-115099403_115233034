@@ -294,7 +294,7 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
 
     auto err = simulators[index].sim.readHouseFile(house_files[index]);
     if ((int)err < 0) {
-      std::cerr << err << " at House File:" << house_files[index]
+      std::cerr << err << " at House File:" << getStem(house_files[index])
                 << ". Skipping house file" << std::endl;
 
       std::ofstream out_error;
@@ -309,7 +309,7 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
         continue;
       }
       out_error << err << std::endl;
-      out_error << "File read error " << simulators[index].file_name
+      out_error << "File read error " << getStem(simulators[index].file_name)
                 << ". Skipping house file" << std::endl;
       out_error.close();
       continue;
@@ -317,7 +317,7 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
 
     simulators[index].is_valid = true;
     found = true;
-    std::cout << "Simulator " << simulators[index].file_name
+    std::cout << "Simulator " << getStem(simulators[index].file_name)
               << " loaded successfully " << std::endl;
   }
   return found;
@@ -367,7 +367,7 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
     }
     try {
       std::cout << "creating algorithm " << index << " "
-                << algorithms[index].file_name << std::endl;
+                << getStem(algorithms[index].file_name) << std::endl;
       auto ptr = algo->create();
       if (!ptr) {
         out_error << "NULL algorithm created, skipping algorith \n";
@@ -383,7 +383,7 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
     }
     if (out_error)
       out_error.close();
-    std::cout << "Algorithm " << algorithms[index].file_name
+    std::cout << "Algorithm " << getStem(algorithms[index].file_name)
               << " loaded successfully " << std::endl;
   }
   return found;
@@ -407,11 +407,11 @@ void generateSummary(std::vector<SimParams> &sims,
   std::stringstream outfile_row_ss;
   std::string outfile_row;
 
-  outfile_row_ss << "Algo/House,";
+  outfile_row_ss << "Algo \\ House,";
   for (auto &sim : sims) {
     if (sim.is_valid)
-      outfile_row_ss << sim.file_name << ",";
-    // std::cout << sim.file_name << ",";
+      outfile_row_ss << getStem(sim.file_name) << ",";
+    // std::cout << getStem(sim.file_name) << ",";
   }
 
   outfile_row = outfile_row_ss.str();
@@ -423,7 +423,7 @@ void generateSummary(std::vector<SimParams> &sims,
     if (algos[aindex].is_algo_valid) {
 
       outfile_row_ss.str(std::string()); // empty the string stream
-      outfile_row_ss << algos[aindex].file_name << ",";
+      outfile_row_ss << getStem(algos[aindex].file_name) << ",";
 
       for (auto sindex = 0; sindex < sims.size(); sindex++) {
         if (sims[sindex].is_valid) {
