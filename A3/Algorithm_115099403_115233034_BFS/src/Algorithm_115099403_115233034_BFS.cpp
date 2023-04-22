@@ -53,7 +53,8 @@ bool Algorithm_115099403_115233034_BFS::needCharge() {
     return false;
   auto st = house_manager_.getShortestPath(current_position_, DOCK_POS);
   // std::cout << __FUNCTION__ << " st.size " << st.size() << std::endl;
-  if (st.size() + BATTERY_BUFF > battery_meter_->getBatteryState())
+  if (st.size() + BATTERY_BUFF > battery_meter_->getBatteryState() ||
+      st.size() + BATTERY_BUFF >= (max_steps_ - steps_))
     return true;
   return false;
 }
@@ -84,6 +85,7 @@ Step Algorithm_115099403_115233034_BFS::work() {
                 << std::endl;
     }
   }
+
   if (max_dirt > 0) {
     current_position_ = getPosition(current_position_, dir);
     return static_cast<Step>(dir);
@@ -94,18 +96,19 @@ Step Algorithm_115099403_115233034_BFS::work() {
   stack_ = house_manager_.getShortestPath(current_position_, {}, true);
   if (stack_.size() * 2 > max_battery_)
     return Step::Finish;
+  if (stack_.empty()) {
+    return Step::Finish;
+  }
   dir = stack_.top();
   stack_.pop();
   current_position_ = getPosition(current_position_, dir);
   return static_cast<Step>(dir);
 }
 
-/**
- * @todo
- * 1. handle total dirt
- */
 Step Algorithm_115099403_115233034_BFS::nextStep() {
-  if (battery_meter_->getBatteryState() == 1 && steps_ == 0) // DEAD case
+
+  if ((battery_meter_->getBatteryState() == 1 && steps_ == 0) ||
+      (max_steps_ - steps_ <= 1 && current_position_ == DOCK_POS)) // DEAD case
     return Step::Finish;
   steps_++;
   // std::cout << __PRETTY_FUNCTION__ << " currentpos: " <<
