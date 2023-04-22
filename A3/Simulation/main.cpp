@@ -121,8 +121,6 @@ void monitor(std::vector<std::vector<long>> &scores,
              std::set<RunnableParams> &running_params,
              std::vector<std::unique_ptr<std::thread>> &runnable_threads) {
 
-  std::cout << "monitor thread id:" << std::this_thread::get_id() << "\n";
-  std::cout << "monitor pthread id:" << pthread_self() << "\n";
   while (1) {
     // monitor thread should sleep for most of the time
     std::this_thread::sleep_for(std::chrono::milliseconds(
@@ -199,8 +197,6 @@ int main(int argc, char **argv) {
 
   std::vector<std::vector<long>> scores(algorithms.size(),
                                         std::vector<long>(simulators.size()));
-  std::vector<std::vector<bool>> timedout(algorithms.size(),
-                                          std::vector<bool>(simulators.size()));
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
