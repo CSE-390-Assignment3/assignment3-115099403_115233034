@@ -267,12 +267,9 @@ int main(int argc, char **argv) {
   while (1) {
     std::this_thread::sleep_for(std::chrono::seconds(
         1)); // TODO: replace 1s with maxtimeout of available houses
-    mtx.lock();
     if (runnable_params.empty() && running_params.empty()) {
-      mtx.unlock();
       break;
     }
-    mtx.unlock();
   }
 
   generateSummary(simulators, algorithms, scores);
