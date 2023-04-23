@@ -53,7 +53,7 @@ bool Algorithm_115099403_115233034_BFS::needCharge() {
     return false;
   auto st = house_manager_.getShortestPath(current_position_, DOCK_POS);
   // std::cout << __FUNCTION__ << " st.size " << st.size() << std::endl;
-  if (st.size() + BATTERY_BUFF > battery_meter_->getBatteryState() ||
+  if (st.size() + 1 > battery_meter_->getBatteryState() ||
       st.size() >= (max_steps_ - steps_))
     return true;
   return false;
