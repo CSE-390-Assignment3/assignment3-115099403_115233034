@@ -85,8 +85,12 @@ void Simulator::dump(std::string output_file_name, bool is_killed) {
     std::cout << "Simulator returning without writing to file " << std::endl;
     return;
   }
-
-  outfile << "NumSteps = " << steps_ << std::endl;
+  outfile << "NumSteps = "
+          << (step_list_.empty() ? 0
+                                 : (step_list_.back() == str(Step::Finish)[0]
+                                        ? (step_list_.size() - 1)
+                                        : step_list_.size()))
+          << std::endl;
   outfile << "DirtLeft = " << house_.totDirt() << std::endl;
   outfile << "Status = " << (is_killed ? "DEAD" : final_state_) << std::endl;
   outfile << "InDock = " << ((isRobotInDock()) ? "TRUE" : "FALSE") << std::endl;
