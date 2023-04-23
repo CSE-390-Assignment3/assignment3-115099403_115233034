@@ -12,6 +12,7 @@ struct CmdArgs {
   std::string algos_path = "";
   bool summary_only = false;
   int num_threads = 10;
+  bool is_debug_log_enabled = false;
 };
 
 /**

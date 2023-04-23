@@ -355,34 +355,44 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
     }
     auto algo =
         AlgorithmRegistrar::getAlgorithmRegistrar().begin() + valid_count;
-    std::ofstream out_error;
-    out_error.open(getStem(algorithms[index].file_name) +
-                   std::string(ERROR_EXTENSION_));
-    if (!out_error) {
-      std::cout << "Error opening error file "
-                << getStem(algorithms[index].file_name) +
-                       std::string(ERROR_EXTENSION_)
-                << std::endl;
-      std::cout << "Skipping writing to error file" << std::endl;
-    }
+
     try {
       std::cout << "creating algorithm " << index << " "
                 << getStem(algorithms[index].file_name) << std::endl;
       auto ptr = algo->create();
       if (!ptr) {
+        std::ofstream out_error;
+        out_error.open(getStem(algorithms[index].file_name) +
+                       std::string(ERROR_EXTENSION_));
+        if (!out_error) {
+          std::cout << "Error opening error file "
+                    << getStem(algorithms[index].file_name) +
+                           std::string(ERROR_EXTENSION_)
+                    << std::endl;
+          std::cout << "Skipping writing to error file" << std::endl;
+        }
         out_error << "NULL algorithm created, skipping algorith \n";
+        out_error.close();
         continue;
       }
       algorithms[index].factory_idx = valid_count++;
       algorithms[index].is_algo_valid = true;
       found = true;
     } catch (...) {
-      if (out_error)
-        out_error << "Algorithm create failed : " << algorithms[index].file_name
+      std::ofstream out_error;
+      out_error.open(getStem(algorithms[index].file_name) +
+                     std::string(ERROR_EXTENSION_));
+      if (!out_error) {
+        std::cout << "Error opening error file "
+                  << getStem(algorithms[index].file_name) +
+                         std::string(ERROR_EXTENSION_)
                   << std::endl;
-    }
-    if (out_error)
+        std::cout << "Skipping writing to error file" << std::endl;
+      }
+      out_error << "Algorithm create failed : " << algorithms[index].file_name
+                << std::endl;
       out_error.close();
+    }
     std::cout << "Algorithm " << getStem(algorithms[index].file_name)
               << " loaded successfully " << std::endl;
   }

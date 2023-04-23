@@ -192,7 +192,7 @@ ArgumentsError processArguments(int argc, char **argv, CmdArgs &cmd_args) {
   bool house_path_found = false, algo_path_found = false;
 
   std::string args_list[] = {"-house_path=", "-algo_path=", "-summary_only",
-                             "-num_threads="};
+                             "-num_threads=", "-debug="};
   for (auto arg : args_list) {
   }
 
@@ -215,6 +215,9 @@ ArgumentsError processArguments(int argc, char **argv, CmdArgs &cmd_args) {
       int value = readAEqb(arg.substr(1), "num_threads");
       if (value > 0)
         cmd_args.num_threads = value;
+    }
+    if (arg.substr(0, args_list[4].size()) == args_list[4]) {
+      cmd_args.is_debug_log_enabled = true;
     }
   }
 
