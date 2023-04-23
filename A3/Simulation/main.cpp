@@ -64,7 +64,8 @@ bool loadTestAlgoFiles(std::vector<AlgoParams> &algorithms,
 
 void worker(int t_id, std::vector<std::vector<long>> &scores,
             std::queue<RunnableParams> &runnable_params,
-            std::set<RunnableParams> &running_params) {
+            std::set<RunnableParams> &running_params,
+            std::vector<Simulator> &simulators) {
   // std::cout << "Thread ID: " << std::this_thread::get_id() << " " << t_id <<
   // " "
   //           << runnable_params.size() << " \nnum_threads "
@@ -84,7 +85,7 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     runnable_params.pop();
     mtx.unlock();
 
-    Simulator sim;
+    Simulator &sim = simulators[t_id];
     sim.setDebugFileName(get_fname(param.h_fname, param.a_fname));
     sim.readHouseFile(param.h_fname);
     auto algo =
@@ -119,8 +120,11 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
 void monitor(std::vector<std::vector<long>> &scores,
              std::queue<RunnableParams> &runnable_params,
              std::set<RunnableParams> &running_params,
-             std::vector<std::unique_ptr<std::thread>> &runnable_threads) {
-
+             std::vector<std::unique_ptr<std::thread>> &runnable_threads,
+             std::vector<Simulator> &simulators) {
+  auto get_fname = [=](auto hname, auto aname) {
+    return getStem(hname) + "-" + getStem(aname) + ".txt";
+  };
   while (1) {
     // monitor thread should sleep for most of the time
     std::this_thread::sleep_for(std::chrono::milliseconds(
@@ -133,8 +137,9 @@ void monitor(std::vector<std::vector<long>> &scores,
           std::chrono::system_clock::now()) {
 
         // TODO: check if there should be any output file if thread killed
-        // if (!cmd_args_.summary_only)
-        //  sim.dump(get_fname(param.h_fname, param.a_fname));
+        if (!cmd_args_.summary_only)
+          simulators[running_param.t_id].dump(
+              get_fname(running_param.h_fname, running_param.a_fname), true);
         scores[running_param.a_index][running_param.h_index] =
             running_param.kill_score; // MaxSteps * 2 + InitialDirt * 300 + 2000
 
@@ -161,7 +166,8 @@ void monitor(std::vector<std::vector<long>> &scores,
 
       runnable_threads[to_terminate_param.t_id] = std::make_unique<std::thread>(
           worker, to_terminate_param.t_id, std::ref(scores),
-          std::ref(runnable_params), std::ref(running_params));
+          std::ref(runnable_params), std::ref(running_params),
+          std::ref(simulators));
       runnable_threads[to_terminate_param.t_id]->detach();
     }
     running_params_mtx.unlock();
@@ -191,16 +197,16 @@ int main(int argc, char **argv) {
   }
 
   /* Init Simulator struct */
-  std::vector<SimParams> simulators(house_files.size());
+  std::vector<SimParams> simulator_params(house_files.size());
   /* Init Algo struct*/
   std::vector<AlgoParams> algorithms(algo_files.size());
 
-  std::vector<std::vector<long>> scores(algorithms.size(),
-                                        std::vector<long>(simulators.size()));
+  std::vector<std::vector<long>> scores(
+      algorithms.size(), std::vector<long>(simulator_params.size()));
 
   bool valid_simulator_found = false, valid_algo_found = true;
 
-  valid_simulator_found = loadTestHouseFiles(simulators, house_files);
+  valid_simulator_found = loadTestHouseFiles(simulator_params, house_files);
 
   valid_algo_found = loadTestAlgoFiles(algorithms, algo_files);
 
@@ -226,10 +232,10 @@ int main(int argc, char **argv) {
 
   for (int aindex = 0; aindex < algorithms.size(); aindex++) {
     if (algorithms[aindex].is_algo_valid) {
-      for (int hindex = 0; hindex < simulators.size(); hindex++) {
-        if (simulators[hindex].is_valid) {
+      for (int hindex = 0; hindex < simulator_params.size(); hindex++) {
+        if (simulator_params[hindex].is_valid) {
           RunnableParams param;
-          param.h_fname = simulators[hindex].file_name;
+          param.h_fname = simulator_params[hindex].file_name;
           param.a_fname = algorithms[aindex].file_name;
           param.af_index = algorithms[aindex].factory_idx;
           param.a_index = aindex;
@@ -246,18 +252,19 @@ int main(int argc, char **argv) {
       }
     }
   }
-
+  std::vector<Simulator> simulators(cmd_args_.num_threads);
   std::vector<std::unique_ptr<std::thread>> runnable_threads(
       cmd_args_.num_threads);
 
   std::thread monitor_thread =
       std::thread(monitor, std::ref(scores), std::ref(runnable_params),
-                  std::ref(running_params), std::ref(runnable_threads));
+                  std::ref(running_params), std::ref(runnable_threads),
+                  std::ref(simulators));
 
   for (int index = 0; index < cmd_args_.num_threads; index++) {
     runnable_threads[index] = std::make_unique<std::thread>(
         worker, index, std::ref(scores), std::ref(runnable_params),
-        std::ref(running_params));
+        std::ref(running_params), std::ref(simulators));
   }
   for (int index = 0; index < cmd_args_.num_threads; index++) {
     runnable_threads[index]->detach();
@@ -272,7 +279,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  generateSummary(simulators, algorithms, scores);
+  generateSummary(simulator_params, algorithms, scores);
 
   algorithms.clear();
   AlgorithmRegistrar::getAlgorithmRegistrar().clear();

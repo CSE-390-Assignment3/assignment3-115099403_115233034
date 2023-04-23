@@ -26,6 +26,10 @@ FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
   if (debug_ostream.is_open())
     debug_ostream.close();
   debug_ostream.open(debug_file_name_);
+  house_ = House();
+  robot_state_ = RobotState();
+  steps_ = 0;
+  step_list_.clear();
   auto error = populateInput(house_, robot_state_, max_steps_, houseFilePath);
   initial_dirt_ = house_.totDirt();
   return error;
@@ -78,7 +82,7 @@ void Simulator::run() {
   debug_ostream << final_state_ << std::endl;
 }
 
-void Simulator::dump(std::string output_file_name) {
+void Simulator::dump(std::string output_file_name, bool is_killed) {
   std::ofstream outfile(output_file_name);
   if (!outfile) {
     std::cout << "Error opening file " << output_file_name << std::endl;
@@ -92,19 +96,18 @@ void Simulator::dump(std::string output_file_name) {
                                         : step_list_.size()))
           << std::endl;
   outfile << "DirtLeft = " << house_.totDirt() << std::endl;
-  outfile << "Status = " << final_state_ << std::endl;
+  outfile << "Status = " << (is_killed ? "DEAD" : final_state_) << std::endl;
   outfile << "InDock = " << ((isRobotInDock()) ? "TRUE" : "FALSE") << std::endl;
-  outfile << "Score = " << getScore() << std::endl;
-
+  outfile << "Score = " << getScore(is_killed) << std::endl;
+  if (is_killed)
+    outfile << "Killed thread due timeout" << std::endl;
   for (auto step : step_list_)
     outfile << step;
   outfile << std::endl;
   outfile.close();
 }
 
-long Simulator::getScore() {
-  if (score_ != -1)
-    return score_;
+long Simulator::getScore(bool is_killed) {
 
   // If DEAD =>
   //     Score = MaxSteps + DirtLeft * 300 + 2000
@@ -112,8 +115,9 @@ long Simulator::getScore() {
   //     Score = MaxSteps + DirtLeft * 300 + 3000
   // Otherwise =>
   //     Score = NumSteps + DirtLeft * 300 + (InDock? 0 : 1000)
-
-  if (final_state_ == "DEAD") {
+  if (is_killed) {
+    score_ = max_steps_ * 2 + initial_dirt_ * 300 + 2000;
+  } else if (final_state_ == "DEAD") {
     score_ = max_steps_ + house_.totDirt() * 300 + 2000;
   } else if (final_state_ == "FINISHED" && !isRobotInDock()) {
     score_ = max_steps_ + house_.totDirt() * 300 + 3000;

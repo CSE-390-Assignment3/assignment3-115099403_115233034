@@ -48,8 +48,8 @@ public:
   void setAlgorithm(AbstractAlgorithm &algorithm);
   void setDebugFileName(std::string debug_file_name);
   void run();
-  void dump(std::string outFileName);
-  long getScore();
+  void dump(std::string out_file_name, bool is_killed = false);
+  long getScore(bool is_killed = false);
   inline bool isRobotInDock() const {
     return robot_state_.getPosition() == house_.getDockPos();
   }
