@@ -104,8 +104,15 @@ std::stack<Direction> HouseManager::getShortestPath(std::pair<int, int> src,
   std::map<Pos, bool> visited;
   std::map<Pos, Pos> parent;
 
-  q.push(src);
+  // q.push(src);
   visited[src] = true;
+  for (std::pair<int, int> v : neighbors(src)) {
+    if (visited.count(v) == 0) { // !visited
+      q.push(v);
+      visited[v] = true;
+      parent[v] = src;
+    }
+  }
 
   bool found = false;
 
