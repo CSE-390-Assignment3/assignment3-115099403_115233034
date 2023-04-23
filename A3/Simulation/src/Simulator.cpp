@@ -26,6 +26,10 @@ FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
   if (debug_ostream.is_open())
     debug_ostream.close();
   debug_ostream.open(debug_file_name_);
+  house_ = House();
+  robot_state_ = RobotState();
+  steps_ = 0;
+  step_list_.clear();
   auto error = populateInput(house_, robot_state_, max_steps_, houseFilePath);
   initial_dirt_ = house_.totDirt();
   return error;
