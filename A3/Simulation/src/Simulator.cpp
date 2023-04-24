@@ -23,9 +23,9 @@ void Simulator::setDebugFileName(std::string debug_file_name) {
 }
 
 FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
-  if (debug_ostream.is_open())
-    debug_ostream.close();
-  debug_ostream.open(debug_file_name_);
+  // if (debug_ostream.is_open())
+  //   debug_ostream.close();
+  // debug_ostream.open(debug_file_name_);
   house_ = House();
   robot_state_ = RobotState();
   steps_ = 0;
@@ -38,7 +38,7 @@ FileReadError Simulator::readHouseFile(const std::string &houseFilePath) {
 void Simulator::run() {
   bool stop = false, error = true;
   final_state_ = "WORKING";
-  debug_ostream << "Before simulation: " << house_;
+  // debug_ostream << "Before simulation: " << house_;
   while (steps_ <= max_steps_) {
     // debug_ostream << "Simulator::step " << steps_ << " pos "
     //           << robot_state_.getPosition()
@@ -56,8 +56,8 @@ void Simulator::run() {
     } else {
       if (currentStep != Step::Stay &&
           wall_sensor_.isWall(static_cast<Direction>(currentStep))) {
-        debug_ostream << "ERROR!! Running into a wall : unexpected behaviour"
-                      << std::endl;
+        // debug_ostream << "ERROR!! Running into a wall : unexpected behaviour"
+        //               << std::endl;
         error = true;
       }
       if (!error) {
@@ -71,15 +71,15 @@ void Simulator::run() {
     }
     if (robot_state_.battery() == 0 && !isRobotInDock()) {
       final_state_ = "DEAD";
-      debug_ostream << "ERROR!! ROBOT REACHED DEAD STATE, STOPPING SIMULATOR"
-                    << std::endl;
+      // debug_ostream << "ERROR!! ROBOT REACHED DEAD STATE, STOPPING SIMULATOR"
+      //               << std::endl;
       break;
     }
     steps_++;
     // debug_ostream << currentStep << " " << house_.totDirt() << std::endl;
   }
-  debug_ostream << "After simulation: " << house_;
-  debug_ostream << final_state_ << std::endl;
+  // debug_ostream << "After simulation: " << house_;
+  // debug_ostream << final_state_ << std::endl;
 }
 
 void Simulator::dump(std::string output_file_name, bool is_killed) {

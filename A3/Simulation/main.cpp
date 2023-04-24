@@ -52,6 +52,8 @@ bool operator<(const RunnableParams &lhs, const RunnableParams &rhs) {
   return lhs.t_id < rhs.t_id;
 }
 
+size_t GLOBAL_MAX_STEPS_ = 0;
+
 void generateSummary(std::vector<SimParams> &sims,
                      std::vector<AlgoParams> &algos,
                      std::vector<std::vector<long>> &scores);
@@ -97,7 +99,7 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     param.start_ts = std::chrono::system_clock::now();
     param.kill_score =
         sim.getMaxSteps() * 2 + sim.getInitialDirt() * 300 + 2000;
-    param.timeout = 2 * 5 * sim.getMaxSteps();
+    param.timeout = 20 * sim.getMaxSteps();
     running_params_mtx.lock();
     running_params.insert(param);
     running_params_mtx.unlock();
@@ -124,10 +126,15 @@ void monitor(std::vector<std::vector<long>> &scores,
   auto get_fname = [=](auto hname, auto aname) {
     return getStem(hname) + "-" + getStem(aname) + ".txt";
   };
+  if (GLOBAL_MAX_STEPS_ < 100)
+    GLOBAL_MAX_STEPS_ = 100;
+  std::cout << "\t\t" << GLOBAL_MAX_STEPS_ << " GLOBAL_MAX_STEPS_ "
+            << std::endl;
   while (1) {
     // monitor thread should sleep for most of the time
+
     std::this_thread::sleep_for(std::chrono::milliseconds(
-        500)); // TODO: maximum of all house max_steps_ * 1ms
+        20 * GLOBAL_MAX_STEPS_)); // TODO: maximum of all house max_steps_ * 1ms
     std::set<RunnableParams> to_terminate_params;
     running_params_mtx.lock();
     std::set<RunnableParams> temp_running_params(running_params.begin(),
@@ -325,7 +332,7 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
       out_error.close();
       continue;
     }
-
+    GLOBAL_MAX_STEPS_ = std::max(GLOBAL_MAX_STEPS_, sim.getMaxSteps());
     simulators[index].is_valid = true;
     found = true;
     std::cout << "Simulator " << getStem(simulators[index].file_name)
