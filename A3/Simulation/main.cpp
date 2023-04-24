@@ -99,7 +99,7 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     param.start_ts = std::chrono::system_clock::now();
     param.kill_score =
         sim.getMaxSteps() * 2 + sim.getInitialDirt() * 300 + 2000;
-    param.timeout = 20 * sim.getMaxSteps();
+    param.timeout = 2 * 5 * sim.getMaxSteps();
     running_params_mtx.lock();
     running_params.insert(param);
     running_params_mtx.unlock();
