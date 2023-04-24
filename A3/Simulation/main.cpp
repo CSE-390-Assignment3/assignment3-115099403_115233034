@@ -302,8 +302,8 @@ bool loadTestHouseFiles(std::vector<SimParams> &simulators,
   bool found = false;
   for (int index = 0; index < house_files.size(); index++) {
     simulators[index].file_name = house_files[index];
-
-    auto err = simulators[index].sim.readHouseFile(house_files[index]);
+    Simulator sim;
+    auto err = sim.readHouseFile(house_files[index]);
     if ((int)err < 0) {
       std::cerr << err << " at House File:" << getStem(house_files[index])
                 << ". Skipping house file" << std::endl;
@@ -450,4 +450,6 @@ void generateSummary(std::vector<SimParams> &sims,
   }
 
   outfile.close();
+
+  std::cout << "Generating summary.csv: DONE!" << std::endl;
 }
