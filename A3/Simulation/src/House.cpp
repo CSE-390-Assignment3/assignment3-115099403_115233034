@@ -48,16 +48,20 @@ Position House::getDockPos() const { return dock_pos_; }
 double House::totDirt() const { return total_dirt_; }
 
 int House::dirtLevel(const Position &position) const {
-  return data_[position.r][position.c] == int(LocType::Dock)
-             ? -1
-             : data_[position.r][position.c];
+  if (position.r < data_.size() && position.c < data_[0].size())
+    return data_[position.r][position.c] == int(LocType::Dock)
+               ? -1
+               : data_[position.r][position.c];
+  return 0;
 }
 
 bool House::isWall(const Position &position) const {
   // std::cout << __FUNCTION__ << " " << position.r << ", " << position.c << " "
   //           << (data_[position.r][position.c] == int(LocType::Wall))
   //           << std::endl;
-  return data_[position.r][position.c] == int(LocType::Wall);
+  if (position.r < data_.size() && position.c < data_[0].size())
+    return data_[position.r][position.c] == int(LocType::Wall);
+  return true;
 }
 
 std::ostream &operator<<(std::ostream &out, const House &house) {

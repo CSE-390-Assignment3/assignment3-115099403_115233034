@@ -76,11 +76,10 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
   };
   while (!runnable_params.empty()) {
     RunnableParams param;
-
-    mtx.lock();
     if (runnable_params.empty()) {
       return;
     }
+    mtx.lock();
     param = runnable_params.front();
     runnable_params.pop();
     mtx.unlock();
@@ -98,7 +97,7 @@ void worker(int t_id, std::vector<std::vector<long>> &scores,
     param.start_ts = std::chrono::system_clock::now();
     param.kill_score =
         sim.getMaxSteps() * 2 + sim.getInitialDirt() * 300 + 2000;
-    param.timeout = 10 * sim.getMaxSteps();
+    param.timeout = 5 * sim.getMaxSteps();
     running_params_mtx.lock();
     running_params.insert(param);
     running_params_mtx.unlock();
@@ -131,7 +130,10 @@ void monitor(std::vector<std::vector<long>> &scores,
         500)); // TODO: maximum of all house max_steps_ * 1ms
     std::set<RunnableParams> to_terminate_params;
     running_params_mtx.lock();
-    for (auto &running_param : running_params) {
+    std::set<RunnableParams> temp_running_params(running_params.begin(),
+                                                 running_params.end());
+    running_params_mtx.unlock();
+    for (auto &running_param : temp_running_params) {
       if (running_param.start_ts +
               std::chrono::milliseconds(running_param.timeout) >
           std::chrono::system_clock::now()) {
@@ -151,7 +153,7 @@ void monitor(std::vector<std::vector<long>> &scores,
       }
     }
     for (auto &to_terminate_param : to_terminate_params) {
-      running_params.erase(to_terminate_param);
+
       std::unique_ptr<std::thread> hogging_thread(
           std::move(runnable_threads[to_terminate_param.t_id]));
 
@@ -169,8 +171,10 @@ void monitor(std::vector<std::vector<long>> &scores,
           std::ref(runnable_params), std::ref(running_params),
           std::ref(simulators));
       runnable_threads[to_terminate_param.t_id]->detach();
+      running_params_mtx.lock();
+      running_params.erase(to_terminate_param);
+      running_params_mtx.unlock();
     }
-    running_params_mtx.unlock();
   }
 }
 
