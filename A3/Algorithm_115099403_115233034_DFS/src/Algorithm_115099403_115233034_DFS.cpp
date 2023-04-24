@@ -1,45 +1,45 @@
 #include "../../AlgorithmCommon/AlgorithmRegistration.h"
 
-#include "../include/Algorithm_115099403_115233034_BFS.h"
+#include "../include/Algorithm_115099403_115233034_DFS.h"
 
 #include "../include/Utils.h"
 
 #include <queue>
 
-REGISTER_ALGORITHM(Algorithm_115099403_115233034_BFS);
+REGISTER_ALGORITHM(Algorithm_115099403_115233034_DFS);
 
-Algorithm_115099403_115233034_BFS::Algorithm_115099403_115233034_BFS()
+Algorithm_115099403_115233034_DFS::Algorithm_115099403_115233034_DFS()
     : steps_(0), house_manager_(), current_position_(DOCK_POS),
       state_(AlgoState::CHARGING) {
   house_manager_.setDirt(current_position_, int(LocType::Dock));
 }
 
-Algorithm_115099403_115233034_BFS::Algorithm_115099403_115233034_BFS(
+Algorithm_115099403_115233034_DFS::Algorithm_115099403_115233034_DFS(
     AbstractAlgorithm &algorithm) {
   *this = algorithm;
 }
 
-void Algorithm_115099403_115233034_BFS::setMaxSteps(std::size_t max_steps) {
+void Algorithm_115099403_115233034_DFS::setMaxSteps(std::size_t max_steps) {
   max_steps_ = max_steps;
 }
 
-void Algorithm_115099403_115233034_BFS::setWallsSensor(
+void Algorithm_115099403_115233034_DFS::setWallsSensor(
     const WallsSensor &walls_sensor) {
   walls_sensor_ = &walls_sensor;
 }
 
-void Algorithm_115099403_115233034_BFS::setDirtSensor(
+void Algorithm_115099403_115233034_DFS::setDirtSensor(
     const DirtSensor &dirt_sensor) {
   dirt_sensor_ = &dirt_sensor;
 }
 
-void Algorithm_115099403_115233034_BFS::setBatteryMeter(
+void Algorithm_115099403_115233034_DFS::setBatteryMeter(
     const BatteryMeter &battery_meter) {
   battery_meter_ = &battery_meter;
   max_battery_ = battery_meter_->getBatteryState();
 }
 
-void Algorithm_115099403_115233034_BFS::updateNeighbors() {
+void Algorithm_115099403_115233034_DFS::updateNeighbors() {
   house_manager_.eraseUnexplored(current_position_);
 
   for (auto dir : dirPriority()) {
@@ -48,7 +48,7 @@ void Algorithm_115099403_115233034_BFS::updateNeighbors() {
   }
 }
 
-bool Algorithm_115099403_115233034_BFS::needCharge() {
+bool Algorithm_115099403_115233034_DFS::needCharge() {
   if (current_position_ == DOCK_POS)
     return false;
   auto st = house_manager_.getShortestPath(current_position_, DOCK_POS);
@@ -59,12 +59,13 @@ bool Algorithm_115099403_115233034_BFS::needCharge() {
   return false;
 }
 
-Step Algorithm_115099403_115233034_BFS::work() {
+Step Algorithm_115099403_115233034_DFS::work() {
   // Assuming current_pos exists in percieved
   // priority to cleaning
   // std::cout << __FUNCTION__ << std::endl;
-  if (house_manager_.dirt(current_position_) > 0)
-    return Step::Stay;
+
+  // if (house_manager_.dirt(current_position_) > 0)
+  //   return Step::Stay;
 
   Direction dir;
   int max_dirt = -1;
@@ -108,7 +109,7 @@ Step Algorithm_115099403_115233034_BFS::work() {
  * @todo
  * 1. handle total dirt
  */
-Step Algorithm_115099403_115233034_BFS::nextStep() {
+Step Algorithm_115099403_115233034_DFS::nextStep() {
   if (battery_meter_->getBatteryState() == 1 && steps_ == 0 ||
       (max_steps_ - steps_ <= 1 && current_position_ == DOCK_POS)) // DEAD case
     return Step::Finish;
