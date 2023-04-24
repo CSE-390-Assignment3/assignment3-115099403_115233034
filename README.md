@@ -1,3 +1,6 @@
+Sukesh Cheripalli, Puneet Udupi
+Graduate team
+
 # Assignment3_Demo
 
 
@@ -6,8 +9,9 @@
 
 * There is a thread pool of num_threads which take "work" from a queue of available algo-house pairs. 
 * Each thread has its own simulator which it reuses everytime to run the corresponding algorithm on the corresponding house. 
-* Timeout for every thread is custom set to 5ms* maxsteps. 
+* Timeout for every thread is custom set to 10ms* maxsteps. 
 * There is a single monitor thread that keeps checking if a thread has timedout or not, if it has timed out, it reduces the priority to idle, dumps the output and spawns another thread in its place.
+* All the threads are detached from the main thread as we wait till running set and runnable queue is empty in main
 
 
 #### Algorithm

@@ -1,0 +1,3 @@
+Optional implementation:
+"OPTIONAL: if you can terminate the “stuck” thread, do that, otherwise you may want to lower its priority to IDLE. The goal is that if one of the algorithms is very slow (e.g. due to too deep recursions), it will not delay or stuck the simulation."
+We have implemented the lowering of priority to IDLE
