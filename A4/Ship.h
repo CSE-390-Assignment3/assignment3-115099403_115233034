@@ -45,7 +45,6 @@ template <> struct hash<shipping::Position> {
 
 // back to the shipping business
 namespace shipping {
-// TODO: verify exception definition
 class BadShipOperationException {
   // X x;
   // Y y;
@@ -137,8 +136,8 @@ template <typename Container> class Ship {
   }
 
 public:
-  // TODO: create containers for x*y*h in ctors
-  // TODO: implement restrictions
+  // TODO: (3) create containers for x*y*h in ctors
+  // TODO: (4) implement restrictions
 
   Ship(X x, Y y, Height max_height) noexcept
       : x_size(x), y_size(y), h_size(max_height) {}
@@ -158,7 +157,7 @@ public:
         groupingFunctions(std::move(groupingFunctions)) {}
 
   void load(X x, Y y, Container c) noexcept(false) {
-    // TODO: handle height of the container
+    // TODO: (5) handle height of the container
     auto &compartment = containers[pos_index(x, y)];
     if (compartment) {
       throw BadShipOperationException(x, y, "occupied load");
@@ -184,12 +183,12 @@ public:
     // note that this implementation is problematic - if to "to" location is bad
     // an excpetion would be thrown after container already unloaded from
     // original compartment leaving us in an invalidated state
-    // TODO: fix above issue (from skeleton)
-    // TODO: add height checking & throw exception
+    // TODO: (6) fix above issue (from skeleton)
+    // TODO: (7) add height checking & throw exception
     load(to_x, to_y, unload(from_x, from_y));
   }
 
-  // TODO: verify if this works out of box from ExamHall
+  // TODO: (8) verify if this works out of box from ExamHall
   GroupView getContainersViewByGroup(const std::string &groupingName,
                                      const std::string &groupName) const {
     auto itr = groups.find(groupingName);
@@ -222,7 +221,7 @@ public:
     }
     return GroupView{0};
   }
-  // TODO: implement API
+  // TODO: (9) implement API
   GroupView getContainersViewByPosition(X x, Y y) const { return GroupView{0}; }
 
   iterator begin() const { return {containers.begin(), containers.end()}; }
