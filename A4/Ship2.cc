@@ -22,7 +22,7 @@ int main() {
   myShip.load(X{1}, Y{1}, "hey");
   myShip.load(X{1}, Y{1}, "bye");
 
-  // auto view00 = myShip.getContainersViewByPosition(X{0}, Y{0});
+  auto view00 = myShip.getContainersViewByPosition(X{0}, Y{0});
   auto view_h = myShip.getContainersViewByGroup("first_letter", "h");
   auto view_Hh = myShip.getContainersViewByGroup("first_letter_toupper", "H");
 
@@ -30,8 +30,9 @@ int main() {
 
   // loop on all “containers”: Hello, hi, hey, bye - in some undefined order
   // loop on view00: hi, Hello - in this exact order
-  // for (const auto &container : view00) {
-  // }
+  for (const auto &container : view00) {
+    std::cout << (string)container;
+  }
 
   // loop on view_h:	pair { tuple{X{0}, Y{0}, Height{1}}, hi },
   // 						pair { tuple{X{1}, Y{1},
