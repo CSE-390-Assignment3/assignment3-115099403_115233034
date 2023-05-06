@@ -88,7 +88,7 @@ template <typename Container> class Ship {
       return p_group ? p_group->end() : group_iterator_type{};
     }
   };
-  class iterator {
+  class GroupViewIterator {
     using ContainersItr =
         typename std::vector<std::optional<Container>>::const_iterator;
     ContainersItr containers_itr;
