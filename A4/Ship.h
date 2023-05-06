@@ -217,9 +217,10 @@ public:
           std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
           std::to_string(y) + ": occupied compartment");
     }
-    current_compartment_size++;
+
     container = std::move(c);
     addContainerToGroups(x, y, (Height)current_compartment_size);
+    current_compartment_size++;
   }
 
   Container unload(X x, Y y) noexcept(false) {
