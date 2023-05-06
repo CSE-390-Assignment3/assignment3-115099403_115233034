@@ -103,7 +103,8 @@ template <typename Container> class Ship {
   };
 
   std::vector<std::optional<Container>> containers;
-  std::vector<std::vector<std::optional<Container>>> stacked_containers;
+  // std::vector<std::vector<std::optional<Container>>> stacked_containers;
+  std::vector<std::optional<Container>> stacked_containers;
   std::vector<size_t> stacked_compartment_sizes;
   std::unordered_map<shipping::Position, int> restrictions_;
   int x_size;
@@ -116,15 +117,30 @@ template <typename Container> class Ship {
   // all groupings by their grouping name
   mutable std::unordered_map<std::string, Group> groups;
   // private method
+  int pos_index(X x, Y y, Height z) const {
+    if (x >= 0 && x < x_size && y >= 0 && y < y_size && z >= 0 && z < h_size) {
+      return (z * x_size * y_size) + y * x_size + x;
+    }
+    throw BadShipOperationException(
+        std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
+        std::to_string(y) + "," + std::to_string(z) + ": index out of range");
+  }
   int pos_index(X x, Y y) const {
     if (x >= 0 && x < x_size && y >= 0 && y < y_size) {
       return y * x_size + x;
     }
-    throw BadShipOperationException(std::to_string(x) + "," +
+    throw BadShipOperationException(std::to_string(__LINE__) + " : " +
+                                    std::to_string(x) + "," +
                                     std::to_string(y) + ": index out of range");
   }
   Container &get_container(X x, Y y) {
-    return containers[pos_index(x, y)].value();
+    return stacked_containers
+        [pos_index(x, y,
+                   (Height)(stacked_compartment_sizes[pos_index(x, y)] - 1))]
+            .value();
+  }
+  Container &get_container(X x, Y y, Height z) {
+    return stacked_containers[pos_index(x, y, z)].value();
   }
   void addContainerToGroups(X x, Y y) {
     Container &e = get_container(x, y);
@@ -146,8 +162,8 @@ public:
 
   Ship(X x, Y y, Height max_height) noexcept
       : x_size(x), y_size(y), h_size(max_height),
-        stacked_containers(std::vector<std::vector<std::optional<Container>>>(
-            x * y, std::vector<std::optional<Container>>(max_height))),
+        stacked_containers(
+            std::vector<std::optional<Container>>(x * y * max_height)),
         stacked_compartment_sizes(std::vector<size_t>(x * y, 0)) {}
 
   Ship(X x, Y y, Height max_height,
@@ -158,6 +174,7 @@ public:
           std::get<0>(restriction), std::get<1>(restriction));
       if (restrictions_.find(current_pos) != restrictions_.end()) {
         throw BadShipOperationException(
+            std::to_string(__LINE__) + " : " +
             std::to_string(std::get<0>(restriction)) + "," +
             std::to_string(std::get<1>(restriction)) +
             ": duplicate restrictions");
@@ -169,44 +186,47 @@ public:
   Ship(X x, Y y, Height max_height,
        std::vector<std::tuple<X, Y, Height>> restrictions,
        Grouping<Container> groupingFunctions) noexcept(false)
-      : Ship(x, y, max_height),
-        groupingFunctions(std::move(groupingFunctions)) {}
+      : Ship(x, y, max_height, restrictions) {
+    groupingFunctions = std::move(groupingFunctions);
+  }
 
   void load(X x, Y y, Container c) noexcept(false) {
     // TODO: (5) handle height of the container
-    // std::cout << "Load enter:" << __LINE__ << std::endl;
     shipping::Position current_pos = shipping::Position(x, y);
     if (restrictions_.find(current_pos) != restrictions_.end() &&
         restrictions_[current_pos] <=
             stacked_compartment_sizes[pos_index(x, y)]) {
       throw BadShipOperationException(
-          std::to_string(x) + "," + std::to_string(y) +
+          std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
+          std::to_string(y) +
           ": has restriction : " + std::to_string(restrictions_[current_pos]));
     }
-
-    auto current_compartment_size = stacked_compartment_sizes[pos_index(x, y)];
+    // std::cout << "Load:" << __LINE__ << std::endl;
+    auto &current_compartment_size = stacked_compartment_sizes[pos_index(x, y)];
     auto &container =
-        stacked_containers[pos_index(x, y)][current_compartment_size - 1];
+        stacked_containers[pos_index(x, y, (Height)(current_compartment_size))];
     if (current_compartment_size == h_size) {
-      throw BadShipOperationException(std::to_string(x) + "," +
-                                      std::to_string(y) +
-                                      ": occupied compartment");
+      throw BadShipOperationException(
+          std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
+          std::to_string(y) + ": occupied compartment");
     }
+    current_compartment_size++;
     container = std::move(c);
-    // addContainerToGroups(x, y);
+    addContainerToGroups(x, y);
   }
 
   Container unload(X x, Y y) noexcept(false) {
     auto unload_index = stacked_compartment_sizes[pos_index(x, y)] - 1;
     if (unload_index == -1) {
-      throw BadShipOperationException(std::to_string(x) + "," +
-                                      std::to_string(y) +
-                                      ": no container to unload");
+      throw BadShipOperationException(
+          std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
+          std::to_string(y) + ": no container to unload");
     }
 
-    auto &unload_container = stacked_containers[pos_index(x, y)][unload_index];
+    auto &unload_container =
+        stacked_containers[pos_index(x, y, (Height)unload_index)];
     auto empty_container = std::optional<Container>{};
-    // removeContainerFromGroups(x, y);
+    removeContainerFromGroups(x, y);
     std::swap(unload_container, empty_container);
     return empty_container.value();
   }
@@ -223,7 +243,7 @@ public:
   // TODO: (8) verify if this works out of box from ExamHall
   GroupView getContainersViewByGroup(const std::string &groupingName,
                                      const std::string &groupName) const {
-    /*auto itr = groups.find(groupingName);
+    auto itr = groups.find(groupingName);
     if (itr == groups.end() &&
         groupingFunctions.find(groupingName) != groupingFunctions.end()) {
       // for use of insert and tie, see:
@@ -250,14 +270,20 @@ public:
         // Pos2Container{}}); itr2 = insert_itr;
       }
       return GroupView{itr2->second};
-    }*/
+    }
     return GroupView{0};
   }
   // TODO: (9) implement API
   GroupView getContainersViewByPosition(X x, Y y) const { return GroupView{0}; }
 
-  iterator begin() const { return {containers.begin(), containers.end()}; }
-  iterator end() const { return {containers.end(), containers.end()}; }
+  iterator begin() const {
+    std::cout << "TestBegin\n";
+    return {stacked_containers.begin(), stacked_containers.end()};
+  }
+  iterator end() const {
+    std::cout << "TestEnd\n";
+    return {stacked_containers.begin(), stacked_containers.end()};
+  }
 
   //-------------------------------------------------------
   // Note:

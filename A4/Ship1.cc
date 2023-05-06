@@ -51,7 +51,11 @@ int main() {
 
   std::cout << "good-test6\n";
   // good load
-  myShip.load(X{2}, Y{7}, "Hello");
+  try {
+    myShip.load(X{2}, Y{7}, "Hello");
+  } catch (BadShipOperationException &e) {
+    e.print();
+  }
 
   std::cout << "test7\n";
   // bad load - no room
