@@ -111,7 +111,7 @@ template <typename Container> class Ship {
   int y_size;
   int h_size;
 
-  Grouping<Container> groupingFunctions;
+  Grouping<Container> groupingFunctions_;
   using Pos2Container = std::unordered_map<Position, const Container &>;
   using Group = std::unordered_map<std::string, Pos2Container>;
   // all groupings by their grouping name
@@ -144,14 +144,15 @@ template <typename Container> class Ship {
   }
   void addContainerToGroups(X x, Y y) {
     Container &e = get_container(x, y);
-    for (auto &group_pair : groupingFunctions) {
+    // std::cout << groupingFunctions_.size() << std::endl;
+    for (auto &group_pair : groupingFunctions_) {
       groups[group_pair.first][group_pair.second(e)].insert(
           {std::tuple{x, y}, e});
     }
   }
   void removeContainerFromGroups(X x, Y y) {
     Container &e = get_container(x, y);
-    for (auto &group_pair : groupingFunctions) {
+    for (auto &group_pair : groupingFunctions_) {
       groups[group_pair.first][group_pair.second(e)].erase(std::tuple{x, y});
     }
   }
@@ -187,7 +188,7 @@ public:
        std::vector<std::tuple<X, Y, Height>> restrictions,
        Grouping<Container> groupingFunctions) noexcept(false)
       : Ship(x, y, max_height, restrictions) {
-    groupingFunctions = std::move(groupingFunctions);
+    groupingFunctions_ = std::move(groupingFunctions);
   }
 
   void load(X x, Y y, Container c) noexcept(false) {
@@ -245,7 +246,7 @@ public:
                                      const std::string &groupName) const {
     auto itr = groups.find(groupingName);
     if (itr == groups.end() &&
-        groupingFunctions.find(groupingName) != groupingFunctions.end()) {
+        groupingFunctions_.find(groupingName) != groupingFunctions_.end()) {
       // for use of insert and tie, see:
       // 1. https://en.cppreference.com/w/cpp/utility/tuple/tie
       // 2. https://en.cppreference.com/w/cpp/container/unordered_map/insert
@@ -256,6 +257,7 @@ public:
       //--------------------------------------------------------------------
       // auto [insert_itr, _] = groups.insert({groupingName, Group{}});
       // itr = insert_itr;
+      std::cout << "Test1\n";
     }
     if (itr != groups.end()) {
       const auto &grouping = itr->second;
@@ -269,20 +271,20 @@ public:
         // auto [insert_itr, _] = itr->second.insert({groupName,
         // Pos2Container{}}); itr2 = insert_itr;
       }
+      std::cout << "Test2\n";
       return GroupView{itr2->second};
     }
+    std::cout << "Test3\n";
     return GroupView{0};
   }
   // TODO: (9) implement API
   GroupView getContainersViewByPosition(X x, Y y) const { return GroupView{0}; }
 
   iterator begin() const {
-    std::cout << "TestBegin\n";
     return {stacked_containers.begin(), stacked_containers.end()};
   }
   iterator end() const {
-    std::cout << "TestEnd\n";
-    return {stacked_containers.begin(), stacked_containers.end()};
+    return {stacked_containers.end(), stacked_containers.end()};
   }
 
   //-------------------------------------------------------
