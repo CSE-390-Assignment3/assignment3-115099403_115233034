@@ -4,6 +4,7 @@
 // =====================================
 #include <functional>
 #include <iostream>
+#include <list>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -48,6 +49,7 @@ template <> struct hash<shipping::Position3D> {
     return std::get<0>(pos) ^ (std::get<1>(pos) << 1) ^ (std::get<2>(pos) << 2);
   }
 };
+
 } // namespace std
 
 // back to the shipping business
@@ -70,7 +72,7 @@ using Grouping =
 template <typename Container> class Ship {
   class GroupView {
     const std::unordered_map<Position3D, const Container &> *p_group = nullptr;
-    using iterator_type =
+    using IteratorType =
         typename std::unordered_map<Position3D,
                                     const Container &>::const_iterator;
 
@@ -78,9 +80,10 @@ template <typename Container> class Ship {
     GroupView(const std::unordered_map<Position3D, const Container &> &group)
         : p_group(&group) {}
     GroupView(int) {}
-    auto begin() const { return p_group ? p_group->begin() : iterator_type{}; }
-    auto end() const { return p_group ? p_group->end() : iterator_type{}; }
+    auto begin() const { return p_group ? p_group->begin() : IteratorType{}; }
+    auto end() const { return p_group ? p_group->end() : IteratorType{}; }
   };
+
   class GroupIterator {
     using ContainersItr =
         typename std::vector<std::optional<Container>>::const_iterator;
@@ -108,8 +111,48 @@ template <typename Container> class Ship {
     }
   };
 
-  std::vector<std::optional<Container>> containers;
-  // std::vector<std::vector<std::optional<Container>>> stacked_containers;
+  class PositionIterator {
+    using ContainersItr = typename std::list<
+        std::reference_wrapper<const Container>>::const_iterator;
+    ContainersItr containers_itr_;
+
+  public:
+    PositionIterator(){};
+    PositionIterator(ContainersItr containers_itr, ContainersItr containers_end)
+        : containers_itr_(containers_itr) {}
+    PositionIterator operator++(int) {
+      --containers_itr_;
+      return *this;
+    }
+    PositionIterator &operator++() {
+      --containers_itr_;
+      return *this;
+    }
+    const Container &operator*() const {
+      return (const Container &)(*containers_itr_);
+    }
+    bool operator!=(PositionIterator other) const {
+      return containers_itr_ != other.containers_itr_;
+    }
+  };
+
+  class PositionView {
+    std::list<std::reference_wrapper<const Container>> *pview_list_ = nullptr;
+    PositionIterator ret_begin;
+    PositionIterator ret_end;
+    using IteratorType = typename std::list<
+        std::reference_wrapper<const Container>>::const_iterator;
+
+  public:
+    PositionView(std::list<std::reference_wrapper<const Container>> &pview_list)
+        : pview_list_(&pview_list),
+          ret_begin(pview_list.begin(), pview_list.end()),
+          ret_end(pview_list.end(), pview_list.end()) {}
+    PositionView(int) {}
+    auto begin() const { return pview_list_ ? ret_begin : PositionIterator{}; }
+    auto end() const { return pview_list_ ? ret_end : PositionIterator{}; }
+  };
+
   std::vector<std::optional<Container>> stacked_containers;
   std::vector<size_t> stacked_compartment_sizes;
   std::unordered_map<shipping::Position, int> restrictions_;
@@ -122,7 +165,9 @@ template <typename Container> class Ship {
   using Group = std::unordered_map<std::string, Pos3D2Container>;
   // all groupings by their grouping name
   mutable std::unordered_map<std::string, Group> groups;
-  // private method
+  mutable std::vector<std::list<std::reference_wrapper<const Container>>>
+      position_list_;
+  //   private method
   int pos_index(X x, Y y, Height z) const {
     if (x >= 0 && x < x_size && y >= 0 && y < y_size && z >= 0 && z < h_size) {
       return (z * x_size * y_size) + y * x_size + x;
@@ -163,6 +208,18 @@ template <typename Container> class Ship {
     }
   }
 
+  void addContainerToPList(X x, Y y, Height z) {
+    Container &c = get_container(x, y, z);
+    position_list_[pos_index(x, y)].push_front(c);
+    for (auto &test : position_list_[pos_index(x, y)])
+      std::cout << (std::string)test << " ";
+    std::cout << std::endl;
+  }
+
+  void removeContainerFromPList(X x, Y y, Height z) {
+    position_list_[pos_index(x, y)].pop_front();
+  }
+
 public:
   // TODO: (3) create containers for x*y*h in ctors
   // TODO: (4) implement restrictions
@@ -171,7 +228,10 @@ public:
       : x_size(x), y_size(y), h_size(max_height),
         stacked_containers(
             std::vector<std::optional<Container>>(x * y * max_height)),
-        stacked_compartment_sizes(std::vector<size_t>(x * y, 0)) {}
+        stacked_compartment_sizes(std::vector<size_t>(x * y, 0)),
+        position_list_(
+            std::vector<std::list<std::reference_wrapper<const Container>>>(
+                x * y)) {}
 
   Ship(X x, Y y, Height max_height,
        std::vector<std::tuple<X, Y, Height>> restrictions) noexcept(false)
@@ -220,6 +280,7 @@ public:
 
     container = std::move(c);
     addContainerToGroups(x, y, (Height)current_compartment_size);
+    addContainerToPList(x, y, (Height)current_compartment_size);
     current_compartment_size++;
   }
 
@@ -238,6 +299,7 @@ public:
     std::swap(unload_container, empty_container);
 
     removeContainerFromGroups(x, y, (Height)unload_index);
+    removeContainerFromPList(x, y, (Height)unload_index);
     current_compartment_size--;
     return empty_container.value();
   }
@@ -285,7 +347,14 @@ public:
     return GroupView{0};
   }
   // TODO: (9) implement API
-  GroupView getContainersViewByPosition(X x, Y y) const { return GroupView{0}; }
+  PositionView getContainersViewByPosition(X x, Y y) const {
+    try {
+      return PositionView{position_list_[pos_index(x, y)]};
+    } catch (...) {
+      ;
+    }
+    return PositionView{0};
+  }
 
   GroupIterator begin() const {
     return {stacked_containers.begin(), stacked_containers.end()};
