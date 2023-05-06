@@ -257,7 +257,6 @@ public:
       //--------------------------------------------------------------------
       // auto [insert_itr, _] = groups.insert({groupingName, Group{}});
       // itr = insert_itr;
-      std::cout << "Test1\n";
     }
     if (itr != groups.end()) {
       const auto &grouping = itr->second;
@@ -271,10 +270,8 @@ public:
         // auto [insert_itr, _] = itr->second.insert({groupName,
         // Pos2Container{}}); itr2 = insert_itr;
       }
-      std::cout << "Test2\n";
       return GroupView{itr2->second};
     }
-    std::cout << "Test3\n";
     return GroupView{0};
   }
   // TODO: (9) implement API

@@ -19,10 +19,6 @@ int main() {
                            groupingFunctions};
   // load “containers”
   myShip.load(X{0}, Y{0}, "Hello");
-  for (const auto &container : myShip) {
-    std::cout << container << " ";
-  }
-  std::cout << std::endl;
   myShip.load(X{1}, Y{1}, "hey");
   myShip.load(X{1}, Y{1}, "bye");
 
