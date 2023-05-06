@@ -118,14 +118,14 @@ template <typename Container> class Ship {
 
   public:
     PositionIterator(){};
-    PositionIterator(ContainersItr containers_itr, ContainersItr containers_end)
+    PositionIterator(ContainersItr containers_itr)
         : containers_itr_(containers_itr) {}
     PositionIterator operator++(int) {
-      --containers_itr_;
+      ++containers_itr_;
       return *this;
     }
     PositionIterator &operator++() {
-      --containers_itr_;
+      ++containers_itr_;
       return *this;
     }
     const Container &operator*() const {
@@ -138,19 +138,21 @@ template <typename Container> class Ship {
 
   class PositionView {
     std::list<std::reference_wrapper<const Container>> *pview_list_ = nullptr;
-    PositionIterator ret_begin;
-    PositionIterator ret_end;
     using IteratorType = typename std::list<
         std::reference_wrapper<const Container>>::const_iterator;
 
   public:
     PositionView(std::list<std::reference_wrapper<const Container>> &pview_list)
-        : pview_list_(&pview_list),
-          ret_begin(pview_list.begin(), pview_list.end()),
-          ret_end(pview_list.end(), pview_list.end()) {}
+        : pview_list_(&pview_list) {}
     PositionView(int) {}
-    auto begin() const { return pview_list_ ? ret_begin : PositionIterator{}; }
-    auto end() const { return pview_list_ ? ret_end : PositionIterator{}; }
+    auto begin() const {
+      return pview_list_ ? PositionIterator{pview_list_->begin()}
+                         : PositionIterator{};
+    }
+    auto end() const {
+      return pview_list_ ? PositionIterator{pview_list_->end()}
+                         : PositionIterator{};
+    }
   };
 
   std::vector<std::optional<Container>> stacked_containers;
@@ -211,9 +213,9 @@ template <typename Container> class Ship {
   void addContainerToPList(X x, Y y, Height z) {
     Container &c = get_container(x, y, z);
     position_list_[pos_index(x, y)].push_front(c);
-    for (auto &test : position_list_[pos_index(x, y)])
-      std::cout << (std::string)test << " ";
-    std::cout << std::endl;
+    // for (auto &test : position_list_[pos_index(x, y)])
+    //   std::cout << (std::string)test << " ";
+    // std::cout << std::endl;
   }
 
   void removeContainerFromPList(X x, Y y, Height z) {
