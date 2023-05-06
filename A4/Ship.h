@@ -223,7 +223,8 @@ public:
   }
 
   Container unload(X x, Y y) noexcept(false) {
-    auto unload_index = stacked_compartment_sizes[pos_index(x, y)] - 1;
+    auto &current_compartment_size = stacked_compartment_sizes[pos_index(x, y)];
+    auto unload_index = current_compartment_size - 1;
     if (unload_index == -1) {
       throw BadShipOperationException(
           std::to_string(__LINE__) + " : " + std::to_string(x) + "," +
@@ -233,8 +234,10 @@ public:
     auto &unload_container =
         stacked_containers[pos_index(x, y, (Height)unload_index)];
     auto empty_container = std::optional<Container>{};
-    removeContainerFromGroups(x, y, (Height)unload_index);
     std::swap(unload_container, empty_container);
+
+    removeContainerFromGroups(x, y, (Height)unload_index);
+    current_compartment_size--;
     return empty_container.value();
   }
   void move(X from_x, Y from_y, X to_x, Y to_y) noexcept(false) {
